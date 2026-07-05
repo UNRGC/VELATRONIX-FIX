@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+uploads/
+uploaded_files/
+.DS_Store
+coverage/

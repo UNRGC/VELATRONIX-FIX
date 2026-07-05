@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums controlados ----------
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  TECHNICIAN
+}
+
+enum DeviceType {
+  PC
+  LAPTOP
+  PRINTER
+  PHONE
+  TABLET
+  OTHER
+}
+
+enum RepairStatus {
+  EN_ESPERA_REVISION
+  EN_DIAGNOSTICO
+  DIAGNOSTICADO
+  EN_ESPERA_PAGO
+  PAGO_EN_VALIDACION
+  EN_PROCESO_REPARACION
+  REPARACION_REALIZADA
+  LISTO_PARA_ENTREGA
+  DEVOLUCION_SIN_REPARACION
+  ENTREGADO_CERRADO
+}
+
+enum PaymentStatus {
+  NOT_REQUIRED
+  PENDING
+  PROOF_RECEIVED
+  VALIDATED
+  REJECTED
+  CANCELLED
+}
+
+enum ProofStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+}
+
+enum ActorType {
+  INTERNAL_USER
+  PUBLIC_CLIENT
+  SYSTEM
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+}
+
+// ---------- Modelos ----------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(EMPLOYEE)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdRepairs    Repair[] @relation("RepairCreatedBy")
+  updatedRepairs    Repair[] @relation("RepairUpdatedBy")
+  assignedRepairs   Repair[] @relation("RepairTechnician")
+  history           RepairHistory[]
+  notifications     Notification[]
+  paymentSettings   PaymentSettings[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  repairs Repair[]
+
+  @@index([email])
+}
+
+model Repair {
+  id                  String       @id @default(cuid())
+  folio               String       @unique
+  customerId          String
+  customer            Customer     @relation(fields: [customerId], references: [id])
+
+  deviceType          DeviceType
+  deviceBrand         String?
+  deviceModel         String?
+  deviceSerialNumber  String?
+  deviceColor         String?
+  receivedAccessories String?
+  physicalCondition   String?
+  reportedIssue       String
+
+  diagnosis           String?
+  requiredActions     String?
+  customerVisibleNotes String?
+  internalNotes       String?
+  estimatedCost       Decimal?     @db.Decimal(12, 2)
+  requiresPayment     Boolean      @default(false)
+
+  status              RepairStatus @default(EN_ESPERA_REVISION)
+  paymentStatus       PaymentStatus @default(NOT_REQUIRED)
+
+  assignedTechnicianId String?
+  assignedTechnician   User?       @relation("RepairTechnician", fields: [assignedTechnicianId], references: [id])
+  createdByUserId      String?
+  createdByUser        User?       @relation("RepairCreatedBy", fields: [createdByUserId], references: [id])
+  updatedByUserId      String?
+  updatedByUser        User?       @relation("RepairUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  receivedAt          DateTime     @default(now())
+  readyAt             DateTime?
+  deliveredAt         DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  paymentRequests PaymentRequest[]
+  paymentProofs   PaymentProof[]
+  history         RepairHistory[]
+  notifications   Notification[]
+  emailLogs       EmailLog[]
+
+  @@index([status])
+  @@index([customerId])
+}
+
+model PaymentRequest {
+  id                 String        @id @default(cuid())
+  repairId           String
+  repair             Repair        @relation(fields: [repairId], references: [id])
+  amount             Decimal       @db.Decimal(12, 2)
+  concept            String
+  allowedMethods     String[]      // ej: ["TRANSFER","DEPOSIT","CASH"]
+  instructionsSnapshot Json?       // copia de PaymentSettings al momento de solicitar
+  status             PaymentStatus @default(PENDING)
+
+  createdByUserId    String?
+  validatedByUserId  String?
+  validatedAt        DateTime?
+  rejectedByUserId   String?
+  rejectedAt         DateTime?
+  rejectionReason    String?
+
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  proofs PaymentProof[]
+
+  @@index([repairId])
+  @@index([status])
+}
+
+model PaymentProof {
+  id               String      @id @default(cuid())
+  paymentRequestId String
+  paymentRequest   PaymentRequest @relation(fields: [paymentRequestId], references: [id])
+  repairId         String
+  repair           Repair      @relation(fields: [repairId], references: [id])
+
+  originalFilename String
+  storedFilename   String
+  filePath         String
+  mimeType         String
+  sizeBytes        Int
+  status           ProofStatus @default(PENDING)
+
+  uploadedAt       DateTime    @default(now())
+  validatedAt      DateTime?
+  rejectedAt       DateTime?
+  rejectionReason  String?
+
+  @@index([repairId])
+  @@index([paymentRequestId])
+}
+
+model RepairHistory {
+  id           String        @id @default(cuid())
+  repairId     String
+  repair       Repair        @relation(fields: [repairId], references: [id])
+  fromStatus   RepairStatus?
+  toStatus     RepairStatus?
+  action       String
+  publicNote   String?
+  internalNote String?
+  actorUserId  String?
+  actorUser    User?         @relation(fields: [actorUserId], references: [id])
+  actorType    ActorType     @default(INTERNAL_USER)
+  createdAt    DateTime      @default(now())
+
+  @@index([repairId])
+}
+
+model Notification {
+  id              String   @id @default(cuid())
+  recipientUserId String?
+  recipientUser   User?    @relation(fields: [recipientUserId], references: [id])
+  recipientRole   Role?
+  repairId        String?
+  repair          Repair?  @relation(fields: [repairId], references: [id])
+  type            String
+  title           String
+  message         String
+  isRead          Boolean  @default(false)
+  readAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([recipientRole, isRead])
+}
+
+model EmailLog {
+  id               String      @id @default(cuid())
+  repairId         String?
+  repair           Repair?     @relation(fields: [repairId], references: [id])
+  recipientEmail   String
+  subject          String
+  template         String
+  status           EmailStatus
+  providerResponse String?
+  sentAt           DateTime?
+  errorMessage     String?
+  createdAt        DateTime    @default(now())
+}
+
+model PaymentSettings {
+  id                     String   @id @default(cuid())
+  beneficiaryName        String?
+  bankName               String?
+  accountNumber          String?
+  clabe                  String?
+  cardNumber             String?
+  concept                String?
+  transferInstructions   String?
+  depositInstructions    String?
+  cashPaymentInstructions String?
+  additionalNotes        String?
+  updatedByUserId        String?
+  updatedByUser          User?    @relation(fields: [updatedByUserId], references: [id])
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
