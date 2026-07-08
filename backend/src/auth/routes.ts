@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../prisma';
 import { asyncHandler, HttpError } from '../http';
-import { AuthedRequest, requireAuth, signToken } from './middleware';
+import { env } from '../env';
+import { AUTH_COOKIE_NAME, AuthedRequest, requireAuth, signToken } from './middleware';
 
 export const authRouter = Router();
 
@@ -11,6 +12,13 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
+
+const authCookie = {
+  httpOnly: true,
+  secure: env.nodeEnv === 'production',
+  sameSite: 'lax' as const,
+  path: '/api',
+};
 
 authRouter.post(
   '/login',
@@ -22,7 +30,8 @@ authRouter.post(
       throw new HttpError(401, 'Credenciales inválidas');
     }
     const token = signToken(user);
-    res.json({ token, user: publicUser(user) });
+    res.cookie(AUTH_COOKIE_NAME, token, authCookie);
+    res.json({ user: publicUser(user) });
   })
 );
 
@@ -35,7 +44,10 @@ authRouter.get(
 );
 
 // Logout es del lado del cliente (borra el token). Endpoint por compatibilidad.
-authRouter.post('/logout', (_req, res) => res.json({ ok: true }));
+authRouter.post('/logout', (_req, res) => {
+  res.clearCookie(AUTH_COOKIE_NAME, authCookie);
+  res.json({ ok: true });
+});
 
 function publicUser(u: { id: string; name: string; email: string; role: string; isActive: boolean }) {
   return { id: u.id, name: u.name, email: u.email, role: u.role, isActive: u.isActive };

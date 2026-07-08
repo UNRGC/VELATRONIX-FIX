@@ -24,5 +24,5 @@ RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
 
 EXPOSE 4000
 
-# migrate deploy → seed → arranque (ver docker-entrypoint.sh)
+# db push → seed → arranque (ver docker-entrypoint.sh)
 CMD ["./docker-entrypoint.sh"]

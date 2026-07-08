@@ -13,39 +13,47 @@ export interface Transition {
 // se rechaza en el backend (el frontend nunca fija estados libres).
 export const TRANSITIONS: Record<RepairStatus, Transition[]> = {
   EN_ESPERA_REVISION: [
-    { to: 'EN_DIAGNOSTICO', allow: ['ADMIN', 'EMPLOYEE', 'TECHNICIAN'], action: 'Diagnóstico iniciado' },
+    { to: 'EN_DIAGNOSTICO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Diagnóstico iniciado' },
     { to: 'DEVOLUCION_SIN_REPARACION', allow: ['ADMIN'], action: 'Devolución sin reparación' },
   ],
   EN_DIAGNOSTICO: [
-    { to: 'DIAGNOSTICADO', allow: ['ADMIN', 'EMPLOYEE', 'TECHNICIAN'], action: 'Diagnóstico registrado' },
-    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'EMPLOYEE', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
+    { to: 'DIAGNOSTICADO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Diagnóstico registrado' },
+    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
     { to: 'DEVOLUCION_SIN_REPARACION', allow: ['ADMIN'], action: 'Devolución sin reparación' },
   ],
   DIAGNOSTICADO: [
-    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'EMPLOYEE', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
-    { to: 'EN_PROCESO_REPARACION', allow: ['ADMIN'], action: 'Reparación en proceso' },
+    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
+    { to: 'EN_PROCESO_REPARACION', allow: ['ADMIN', 'TECHNICIAN'], action: 'Reparación en proceso' },
     { to: 'DEVOLUCION_SIN_REPARACION', allow: ['ADMIN'], action: 'Devolución sin reparación' },
   ],
   EN_ESPERA_PAGO: [
     { to: 'PAGO_EN_VALIDACION', allow: ['PUBLIC'], action: 'Comprobante de pago recibido' },
-    { to: 'EN_PROCESO_REPARACION', allow: ['ADMIN'], action: 'Pago confirmado en efectivo' },
+    { to: 'EN_PROCESO_REPARACION', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago confirmado en efectivo' },
+    // Pago solicitado ya con el equipo reparado (pieza final / pago contra entrega): regresa ahí, no retrocede a "en proceso".
+    { to: 'REPARACION_REALIZADA', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago confirmado en efectivo' },
+    { to: 'LISTO_PARA_ENTREGA', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago confirmado en efectivo' },
     { to: 'DEVOLUCION_SIN_REPARACION', allow: ['ADMIN'], action: 'Devolución sin reparación' },
   ],
   PAGO_EN_VALIDACION: [
-    { to: 'EN_PROCESO_REPARACION', allow: ['ADMIN'], action: 'Pago validado' },
-    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN'], action: 'Comprobante rechazado' },
+    { to: 'EN_PROCESO_REPARACION', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago validado' },
+    { to: 'REPARACION_REALIZADA', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago validado' },
+    { to: 'LISTO_PARA_ENTREGA', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago validado' },
+    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'EMPLOYEE'], action: 'Comprobante rechazado' },
   ],
   EN_PROCESO_REPARACION: [
     { to: 'REPARACION_REALIZADA', allow: ['ADMIN', 'TECHNICIAN'], action: 'Reparación realizada' },
     // Pago adicional mid-reparación (ej. piezas descubiertas al trabajar): vuelve a espera de pago.
-    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'EMPLOYEE', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
+    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
     { to: 'DEVOLUCION_SIN_REPARACION', allow: ['ADMIN'], action: 'Devolución sin reparación' },
   ],
   REPARACION_REALIZADA: [
-    { to: 'LISTO_PARA_ENTREGA', allow: ['ADMIN'], action: 'Listo para entrega' },
+    { to: 'LISTO_PARA_ENTREGA', allow: ['ADMIN', 'TECHNICIAN'], action: 'Listo para entrega' },
+    // Pago final antes de entregar (ej. resto de la reparación).
+    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
   ],
   LISTO_PARA_ENTREGA: [
     { to: 'ENTREGADO_CERRADO', allow: ['ADMIN', 'EMPLOYEE'], action: 'Equipo entregado y cerrado' },
+    { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
   ],
   DEVOLUCION_SIN_REPARACION: [
     { to: 'ENTREGADO_CERRADO', allow: ['ADMIN', 'EMPLOYEE'], action: 'Equipo entregado y cerrado' },

@@ -4,9 +4,11 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = (process.env.ADMIN_EMAIL || 'admin@velatronix.local').toLowerCase();
+  const email = process.env.ADMIN_EMAIL?.toLowerCase();
   const name = process.env.ADMIN_NAME || 'Administrador';
-  const password = process.env.ADMIN_PASSWORD || 'Admin1234!';
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email) throw new Error('Falta variable de entorno: ADMIN_EMAIL');
+  if (!password) throw new Error('Falta variable de entorno: ADMIN_PASSWORD');
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (!existing) {

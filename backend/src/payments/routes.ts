@@ -5,7 +5,7 @@ import { prisma } from '../prisma';
 import { asyncHandler, HttpError } from '../http';
 import { AuthedRequest, requireAuth, requireRole } from '../auth/middleware';
 import { InternalActor, applyTransition, TransitionError } from '../repairs/stateMachine';
-import { createPaymentRequest, findActivePaymentRequest, rejectPayment, validatePayment } from './service';
+import { createPaymentRequest, findActivePaymentRequest, paymentReturnStatus, rejectPayment, validatePayment } from './service';
 import { emailClient } from '../email/notify';
 
 export const paymentsRouter = Router();
@@ -15,30 +15,46 @@ function actorFrom(req: AuthedRequest): InternalActor {
   return { type: 'INTERNAL_USER', userId: req.user!.id, role: req.user!.role };
 }
 
+function ensureAssignedTechnician(req: AuthedRequest, repair: { assignedTechnicianId?: string | null }) {
+  if (req.user!.role === Role.ADMIN) return;
+  if (req.user!.role === Role.TECHNICIAN && repair.assignedTechnicianId === req.user!.id) return;
+  throw new HttpError(403, 'No tienes permiso para esta reparación');
+}
+
+function paymentRequestsForUser<T extends { proofs?: unknown[] }>(list: T[], req: AuthedRequest): T[] {
+  if (req.user!.role !== Role.TECHNICIAN) return list;
+  return list.map((pr) => ({ ...pr, proofs: [] }));
+}
+
 const createSchema = z.object({
   amount: z.number().positive(),
   concept: z.string().min(1),
   allowedMethods: z.array(z.enum(['TRANSFER', 'DEPOSIT', 'CASH'])).optional(),
 });
 
-// Crear solicitud de pago (§13.5). Admin, y Empleado/Técnico si el negocio lo permite.
+// Crear solicitud de pago (§13.5). Admin o técnico asignado.
 paymentsRouter.post(
   '/repairs/:id/payment-request',
-  requireRole(Role.ADMIN, Role.EMPLOYEE, Role.TECHNICIAN),
+  requireRole(Role.ADMIN, Role.TECHNICIAN),
   asyncHandler(async (req: AuthedRequest, res) => {
     const data = createSchema.parse(req.body);
     const repair = await prisma.repair.findUnique({ where: { id: req.params.id }, include: { customer: true } });
     if (!repair) throw new HttpError(404, 'Reparación no encontrada');
+    ensureAssignedTechnician(req, repair);
 
     // Pagos secuenciales: solo una solicitud activa a la vez.
     if (await findActivePaymentRequest(prisma, repair.id)) {
       throw new HttpError(409, 'Ya existe una solicitud de pago activa. Valida o cancela la anterior antes de crear otra.');
     }
 
+    // Si ya estaba en espera de pago (ej. solicitud anterior cancelada), no hay un origen nuevo
+    // que registrar: conserva el comportamiento por defecto de validatePayment.
+    const returnStatus = repair.status !== 'EN_ESPERA_PAGO' ? paymentReturnStatus(repair.status) : undefined;
+
     try {
       await prisma.$transaction(async (tx) => {
-        await createPaymentRequest(tx, repair.id, data, actorFrom(req));
-        // Desde el estado actual (diagnóstico o reparación en proceso) se vuelve a espera de pago.
+        await createPaymentRequest(tx, repair.id, { ...data, returnStatus }, actorFrom(req));
+        // Desde el estado actual (diagnóstico, en proceso, o ya reparado) se vuelve a espera de pago.
         if (repair.status !== 'EN_ESPERA_PAGO') {
           await applyTransition(tx, repair.id, 'EN_ESPERA_PAGO', actorFrom(req), {
             publicNote: 'Se requiere pago o anticipo para continuar con la reparación.',
@@ -58,20 +74,23 @@ paymentsRouter.post(
 
 paymentsRouter.get(
   '/repairs/:id/payment-requests',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const repair = await prisma.repair.findUnique({ where: { id: req.params.id }, select: { assignedTechnicianId: true } });
+    if (!repair) throw new HttpError(404, 'Reparación no encontrada');
+    if (req.user!.role === Role.TECHNICIAN) ensureAssignedTechnician(req, repair);
     const list = await prisma.paymentRequest.findMany({
       where: { repairId: req.params.id },
       orderBy: { createdAt: 'desc' },
       include: { proofs: { orderBy: { uploadedAt: 'desc' } } },
     });
-    res.json(list);
+    res.json(paymentRequestsForUser(list, req));
   })
 );
 
-// Validar / rechazar / cancelar: solo administrador (§7.4, §7.5).
+// Validar / rechazar / cancelar: administrador o recepción.
 paymentsRouter.patch(
   '/payment-requests/:id/validate',
-  requireRole(Role.ADMIN),
+  requireRole(Role.ADMIN, Role.EMPLOYEE),
   asyncHandler(async (req: AuthedRequest, res) => {
     const result = await prisma
       .$transaction((tx) => validatePayment(tx, req.params.id, actorFrom(req)))
@@ -88,7 +107,7 @@ const rejectSchema = z.object({ reason: z.string().min(1) });
 
 paymentsRouter.patch(
   '/payment-requests/:id/reject',
-  requireRole(Role.ADMIN),
+  requireRole(Role.ADMIN, Role.EMPLOYEE),
   asyncHandler(async (req: AuthedRequest, res) => {
     const { reason } = rejectSchema.parse(req.body);
     const result = await prisma
@@ -104,7 +123,7 @@ paymentsRouter.patch(
 
 paymentsRouter.patch(
   '/payment-requests/:id/cancel',
-  requireRole(Role.ADMIN),
+  requireRole(Role.ADMIN, Role.EMPLOYEE),
   asyncHandler(async (req: AuthedRequest, res) => {
     const pr = await prisma.paymentRequest.findUnique({ where: { id: req.params.id } });
     if (!pr) throw new HttpError(404, 'Solicitud de pago no encontrada');

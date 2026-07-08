@@ -8,10 +8,15 @@ function required(name: string, fallback?: string): string {
 }
 
 export const env = {
+  nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '4000', 10),
-  jwtSecret: required('JWT_SECRET', 'dev-secret-change-me'),
+  jwtSecret: required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '12h',
   appPublicUrl: process.env.APP_PUBLIC_URL || 'http://localhost:5173',
+  corsOrigins: (process.env.CORS_ORIGINS || process.env.APP_PUBLIC_URL || 'http://localhost:5173')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
   uploadDir: process.env.UPLOAD_DIR || './uploads',
   maxUploadSizeMb: parseInt(process.env.MAX_UPLOAD_SIZE_MB || '5', 10),
   smtp: {

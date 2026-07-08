@@ -5,12 +5,15 @@ reparaciones de equipos electrónicos (electrónica, instalaciones y reparacione
 
 ## Alcance incluido
 
-- Consulta pública por **folio + correo** (informacional; la única acción del cliente es
+- Consulta pública por **folio + correo o teléfono** (informacional; la única acción del cliente es
   adjuntar comprobante cuando hay pago activo).
 - Generación automática de folios `REP-YYYYMMDD-XXXX`.
 - Registro de cliente y equipo; diagnóstico técnico; notas visibles e internas separadas.
 - Estados de reparación controlados por backend (enum) con transiciones y permisos por rol.
 - Roles: Administrador, Recepción (Empleado), Técnico.
+  - Administrador: control total.
+  - Recepción: registro, datos de cliente/equipo, validación/rechazo de pagos y entrega.
+  - Técnico: diagnóstico, solicitudes de pago y avance técnico sobre reparaciones asignadas.
 - Solicitudes de pago (transferencia / depósito / efectivo) con instrucciones configurables;
   carga y validación **manual** de comprobantes (sin pagos en línea).
 - Notificaciones internas en panel + correos automáticos (SMTP) con registro en `EmailLog`.

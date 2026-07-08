@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { api, getToken, setToken } from './api';
+import { api, setToken } from './api';
 
 export type Role = 'ADMIN' | 'EMPLOYEE' | 'TECHNICIAN';
 export interface User {
@@ -25,24 +25,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!getToken()) {
-      setLoading(false);
-      return;
-    }
     api
       .get('/auth/me')
       .then((r) => setUser(r.data.user))
-      .catch(() => setToken(null))
+      .catch(() => {
+        setToken(null);
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   async function login(email: string, password: string) {
     const r = await api.post('/auth/login', { email, password });
-    setToken(r.data.token);
+    setToken(null);
     setUser(r.data.user);
   }
 
-  function logout() {
+  async function logout() {
+    await api.post('/auth/logout').catch(() => undefined);
     setToken(null);
     setUser(null);
     location.href = '/admin/login';
@@ -55,14 +55,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const can = {
   createRepair: (r?: Role) => r === 'ADMIN' || r === 'EMPLOYEE',
   editRepairData: (r?: Role) => r === 'ADMIN' || r === 'EMPLOYEE',
-  diagnose: (r?: Role) => !!r, // admin, empleado, técnico
-  requestPayment: (r?: Role) => !!r,
-  validatePayment: (r?: Role) => r === 'ADMIN',
+  diagnose: (r?: Role) => r === 'ADMIN' || r === 'TECHNICIAN',
+  requestPayment: (r?: Role) => r === 'ADMIN' || r === 'TECHNICIAN',
+  validatePayment: (r?: Role) => r === 'ADMIN' || r === 'EMPLOYEE',
+  viewProofs: (r?: Role) => r === 'ADMIN' || r === 'EMPLOYEE',
   manageUsers: (r?: Role) => r === 'ADMIN',
   editSettings: (r?: Role) => r === 'ADMIN',
-  markInProcess: (r?: Role) => r === 'ADMIN',
+  markInProcess: (r?: Role) => r === 'ADMIN' || r === 'TECHNICIAN',
   markDone: (r?: Role) => r === 'ADMIN' || r === 'TECHNICIAN',
-  markReady: (r?: Role) => r === 'ADMIN',
+  markReady: (r?: Role) => r === 'ADMIN' || r === 'TECHNICIAN',
   markReturn: (r?: Role) => r === 'ADMIN',
   markDelivered: (r?: Role) => r === 'ADMIN' || r === 'EMPLOYEE',
 };

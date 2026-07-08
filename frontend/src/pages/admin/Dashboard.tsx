@@ -4,6 +4,7 @@ import { api } from '../../lib/api';
 import { StatusBadge } from '../../components/StatusBadge';
 import { fmtDate } from '../../lib/format';
 import { RepairStatus } from '../../lib/status';
+import { can, useAuth } from '../../lib/auth';
 
 interface RecentRepair {
   id: string;
@@ -15,6 +16,7 @@ interface RecentRepair {
 
 export function Dashboard() {
   const nav = useNavigate();
+  const { user } = useAuth();
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: async () => (await api.get('/dashboard')).data,
@@ -29,14 +31,18 @@ export function Dashboard() {
       <p className="page-sub">Resumen operativo del taller</p>
 
       <div className="stat-grid">
-        <Link to="/admin/pagos-pendientes" className="stat hot" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="n">{c.pendingValidation}</div>
-          <div className="l">Pagos por validar</div>
-        </Link>
-        <div className="stat">
-          <div className="n">{c.newProofs}</div>
-          <div className="l">Comprobantes nuevos</div>
-        </div>
+        {can.validatePayment(user?.role) && (
+          <>
+            <Link to="/admin/pagos-pendientes" className="stat hot" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="n">{c.pendingValidation}</div>
+              <div className="l">Pagos por validar</div>
+            </Link>
+            <div className="stat">
+              <div className="n">{c.newProofs}</div>
+              <div className="l">Comprobantes nuevos</div>
+            </div>
+          </>
+        )}
         <div className="stat">
           <div className="n">{c.waitingReview}</div>
           <div className="l">En espera de revisión</div>

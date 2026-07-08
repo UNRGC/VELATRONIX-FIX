@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { api, apiError, downloadProof } from '../../lib/api';
@@ -56,7 +56,12 @@ export function RepairDetail() {
             {repair.folio}
           </h1>
         </div>
-        <StatusBadge status={status} />
+        <div className="row" style={{ gap: 10, alignItems: 'center' }}>
+          <Link to={`/admin/reparaciones/${repair.id}/imprimir`} target="_blank" className="btn btn-ghost btn-sm">
+            Imprimir comprobante
+          </Link>
+          <StatusBadge status={status} />
+        </div>
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 20 }}>
@@ -174,7 +179,7 @@ function DataSection({ repair, role, onSaved }: { repair: Repair; role?: Role; o
             <dt>Cliente</dt>
             <dd>{repair.customer.name}</dd>
             <dt>Correo</dt>
-            <dd>{repair.customer.email}</dd>
+            <dd>{repair.customer.email ?? '—'}</dd>
             <dt>Teléfono</dt>
             <dd>{repair.customer.phone ?? '—'}</dd>
             <dt>Equipo</dt>
@@ -369,7 +374,7 @@ function DiagnosisSection({
                     </div>
                     <div className="field">
                       <label>Concepto *</label>
-                      <input className="input" {...register('concept')} placeholder="Anticipo, mano de obra…" />
+                      <input className="input" list="payment-concepts" {...register('concept')} placeholder="Anticipo, mano de obra…" />
                     </div>
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
@@ -402,7 +407,16 @@ function DiagnosisSection({
 
 /* ---------- Pagos y comprobantes ---------- */
 const ACTIVE_PR = ['PENDING', 'PROOF_RECEIVED', 'REJECTED'];
-const CAN_REQUEST_FROM: RepairStatus[] = ['DIAGNOSTICADO', 'EN_DIAGNOSTICO', 'EN_PROCESO_REPARACION'];
+const CAN_REQUEST_FROM: RepairStatus[] = [
+  'DIAGNOSTICADO',
+  'EN_DIAGNOSTICO',
+  'EN_PROCESO_REPARACION',
+  'REPARACION_REALIZADA',
+  'LISTO_PARA_ENTREGA',
+];
+
+// Sugerencias nativas (datalist) para el concepto de pago: pago inicial, piezas, o el pago final antes de entregar.
+const PAYMENT_CONCEPT_SUGGESTIONS = ['Pago inicial', 'Anticipo de piezas', 'Pago de reparación'];
 
 function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Role; onChange: () => void }) {
   const [error, setError] = useState('');
@@ -462,6 +476,12 @@ function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Rol
       <div className="card-pad stack">
         {error && <div className="alert alert-error">{error}</div>}
 
+        <datalist id="payment-concepts">
+          {PAYMENT_CONCEPT_SUGGESTIONS.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
+
         {canRequest && !showForm && (
           <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setShowForm(true)}>
             + Solicitar pago
@@ -485,6 +505,7 @@ function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Rol
                   <label>Concepto *</label>
                   <input
                     className="input"
+                    list="payment-concepts"
                     value={form.concept}
                     onChange={(e) => setForm({ ...form, concept: e.target.value })}
                     placeholder="Anticipo de piezas, resto de reparación…"
@@ -535,7 +556,7 @@ function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Rol
                 </span>
               </div>
 
-              {(pr.proofs ?? []).length > 0 && (
+              {can.viewProofs(role) && (pr.proofs ?? []).length > 0 && (
                 <div style={{ marginTop: 12 }}>
                   {pr.proofs.map((p: any) => (
                     <div key={p.id} className="row between" style={{ padding: '6px 0', borderTop: '1px solid var(--line)' }}>

@@ -6,7 +6,7 @@ import { asyncHandler, HttpError } from '../http';
 import { AuthedRequest, requireAuth, requireRole } from '../auth/middleware';
 import { generateUniqueFolio } from './folio';
 import { applyTransition, InternalActor, DEDICATED_ONLY, TransitionError } from './stateMachine';
-import { createPaymentRequest, findActivePaymentRequest } from '../payments/service';
+import { createPaymentRequest, findActivePaymentRequest, paymentReturnStatus } from '../payments/service';
 import { emailClient } from '../email/notify';
 
 export const repairsRouter = Router();
@@ -24,12 +24,31 @@ function actorFrom(req: AuthedRequest): InternalActor {
   return { type: 'INTERNAL_USER', userId: req.user!.id, role: req.user!.role };
 }
 
+function canAccessRepair(req: AuthedRequest, repair: { assignedTechnicianId?: string | null }) {
+  if (req.user!.role === Role.ADMIN || req.user!.role === Role.EMPLOYEE) return true;
+  return req.user!.role === Role.TECHNICIAN && repair.assignedTechnicianId === req.user!.id;
+}
+
+function ensureRepairAccess(req: AuthedRequest, repair: { assignedTechnicianId?: string | null }) {
+  if (!canAccessRepair(req, repair)) throw new HttpError(403, 'No tienes permiso para esta reparación');
+}
+
+function repairForUser<T extends { paymentRequests?: unknown[]; paymentProofs?: unknown[] }>(repair: T, req: AuthedRequest): T {
+  if (req.user!.role !== Role.TECHNICIAN) return repair;
+  return {
+    ...repair,
+    paymentProofs: [],
+    paymentRequests: (repair.paymentRequests ?? []).map((pr) => ({ ...(pr as object), proofs: [] })),
+  };
+}
+
 // ---------- Listado con filtros (§16.3) ----------
 repairsRouter.get(
   '/',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const q = req.query;
     const where: Prisma.RepairWhereInput = {};
+    if (req.user!.role === Role.TECHNICIAN) where.assignedTechnicianId = req.user!.id;
     if (q.folio) where.folio = { contains: String(q.folio), mode: 'insensitive' };
     const status = String(q.status || '');
     const deviceType = String(q.deviceType || '');
@@ -58,11 +77,13 @@ repairsRouter.get(
 
 // ---------- Crear reparación (§16.4) ----------
 const createSchema = z.object({
-  customer: z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-    phone: z.string().optional(),
-  }),
+  customer: z
+    .object({
+      name: z.string().min(1),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+    })
+    .refine((c) => c.email || c.phone, { message: 'Se requiere correo o teléfono', path: ['email'] }),
   deviceType: z.nativeEnum(DeviceType),
   deviceBrand: z.string().optional(),
   deviceModel: z.string().optional(),
@@ -83,10 +104,11 @@ repairsRouter.post(
     const actor = actorFrom(req);
 
     const created = await prisma.$transaction(async (tx) => {
-      const email = data.customer.email.toLowerCase();
-      let customer = await tx.customer.findFirst({ where: { email } });
+      const email = data.customer.email?.toLowerCase();
+      const phone = data.customer.phone;
+      let customer = email ? await tx.customer.findFirst({ where: { email } }) : await tx.customer.findFirst({ where: { phone } });
       if (!customer) {
-        customer = await tx.customer.create({ data: { name: data.customer.name, email, phone: data.customer.phone } });
+        customer = await tx.customer.create({ data: { name: data.customer.name, email, phone } });
       }
       const folio = await generateUniqueFolio(tx);
       const repair = await tx.repair.create({
@@ -128,10 +150,11 @@ repairsRouter.post(
 // ---------- Detalle ----------
 repairsRouter.get(
   '/:id',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const repair = await getFullRepair(req.params.id);
     if (!repair) throw new HttpError(404, 'Reparación no encontrada');
-    res.json(repair);
+    ensureRepairAccess(req, repair);
+    res.json(repairForUser(repair, req));
   })
 );
 
@@ -171,7 +194,7 @@ repairsRouter.patch(
   })
 );
 
-// ---------- Diagnóstico (§16.6). Admin, Empleado, Técnico ----------
+// ---------- Diagnóstico (§16.6). Admin y Técnico asignado ----------
 const diagnosisSchema = z.object({
   diagnosis: z.string().min(1),
   requiredActions: z.string().optional(),
@@ -188,7 +211,7 @@ const DIAGNOSABLE: RepairStatus[] = ['EN_ESPERA_REVISION', 'EN_DIAGNOSTICO', 'DI
 
 repairsRouter.patch(
   '/:id/diagnosis',
-  requireRole(Role.ADMIN, Role.EMPLOYEE, Role.TECHNICIAN),
+  requireRole(Role.ADMIN, Role.TECHNICIAN),
   asyncHandler(async (req: AuthedRequest, res) => {
     const data = diagnosisSchema.parse(req.body);
     if (data.requiresPayment && (!data.amount || !data.concept)) {
@@ -197,6 +220,7 @@ repairsRouter.patch(
     const actor = actorFrom(req);
     const repair = await prisma.repair.findUnique({ where: { id: req.params.id }, include: { customer: true } });
     if (!repair) throw new HttpError(404, 'Reparación no encontrada');
+    ensureRepairAccess(req, repair);
     if (!DIAGNOSABLE.includes(repair.status)) {
       throw new HttpError(409, 'El diagnóstico ya no puede editarse en este estado');
     }
@@ -225,7 +249,12 @@ repairsRouter.patch(
         // No duplicar: si ya hay una solicitud activa, solo se conserva.
         const active = await findActivePaymentRequest(tx, repair.id);
         if (!active) {
-          await createPaymentRequest(tx, repair.id, { amount: data.amount!, concept: data.concept!, allowedMethods: data.allowedMethods }, actor);
+          await createPaymentRequest(
+            tx,
+            repair.id,
+            { amount: data.amount!, concept: data.concept!, allowedMethods: data.allowedMethods, returnStatus: paymentReturnStatus(status) },
+            actor
+          );
           if (status !== 'EN_ESPERA_PAGO') {
             await applyTransition(tx, repair.id, 'EN_ESPERA_PAGO', actor, {
               publicNote: 'Se requiere pago o anticipo para continuar con la reparación.',
@@ -250,7 +279,8 @@ repairsRouter.patch(
       amount: data.amount?.toFixed(2),
       concept: data.concept,
     });
-    res.json(await getFullRepair(repair.id));
+    const full = await getFullRepair(repair.id);
+    res.json(full ? repairForUser(full, req) : full);
   })
 );
 
@@ -270,6 +300,7 @@ repairsRouter.patch(
     }
     const current = await prisma.repair.findUnique({ where: { id: req.params.id }, include: { customer: true } });
     if (!current) throw new HttpError(404, 'Reparación no encontrada');
+    ensureRepairAccess(req, current);
     if (current.status === 'PAGO_EN_VALIDACION') {
       throw new HttpError(409, 'Valida o rechaza el pago desde la sección de pagos');
     }
@@ -288,14 +319,18 @@ repairsRouter.patch(
     }
 
     await emailForStatus(updated.status, updated, current.customer);
-    res.json(await getFullRepair(current.id));
+    const full = await getFullRepair(current.id);
+    res.json(full ? repairForUser(full, req) : full);
   })
 );
 
 // ---------- Historial ----------
 repairsRouter.get(
   '/:id/history',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const repair = await prisma.repair.findUnique({ where: { id: req.params.id }, select: { assignedTechnicianId: true } });
+    if (!repair) throw new HttpError(404, 'Reparación no encontrada');
+    ensureRepairAccess(req, repair);
     const history = await prisma.repairHistory.findMany({
       where: { repairId: req.params.id },
       orderBy: { createdAt: 'desc' },
@@ -314,7 +349,7 @@ function getFullRepair(id: string) {
 }
 
 // Correo al cliente según el estado alcanzado por el cambio administrativo.
-async function emailForStatus(status: RepairStatus, repair: Parameters<typeof emailClient>[1], customer: { name: string; email: string }) {
+async function emailForStatus(status: RepairStatus, repair: Parameters<typeof emailClient>[1], customer: { name: string; email: string | null }) {
   const map: Partial<Record<RepairStatus, Parameters<typeof emailClient>[0]>> = {
     EN_PROCESO_REPARACION: 'IN_PROCESS',
     REPARACION_REALIZADA: 'REPAIR_DONE',

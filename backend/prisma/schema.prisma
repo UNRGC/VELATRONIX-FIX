@@ -86,7 +86,7 @@ model User {
 model Customer {
   id        String   @id @default(cuid())
   name      String
-  email     String
+  email     String?
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -94,6 +94,7 @@ model Customer {
   repairs Repair[]
 
   @@index([email])
+  @@index([phone])
 }
 
 model Repair {
@@ -154,6 +155,9 @@ model PaymentRequest {
   allowedMethods     String[]      // ej: ["TRANSFER","DEPOSIT","CASH"]
   instructionsSnapshot Json?       // copia de PaymentSettings al momento de solicitar
   status             PaymentStatus @default(PENDING)
+  // Estado al que debe regresar la reparación cuando este pago se valide (ej. REPARACION_REALIZADA
+  // si se solicitó el pago final estando ya reparado). Null = comportamiento por defecto (EN_PROCESO_REPARACION).
+  returnStatus       RepairStatus?
 
   createdByUserId    String?
   validatedByUserId  String?

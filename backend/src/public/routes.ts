@@ -20,22 +20,30 @@ const fullInclude = {
   history: { orderBy: { createdAt: 'desc' as const } },
 };
 
-// Busca reparación validando folio + correo. Devuelve null (no distingue el motivo).
-async function findByFolioAndEmail(folio: string, email: string) {
+// Solo dígitos, para comparar teléfonos sin importar espacios/guiones/paréntesis.
+function digitsOnly(s: string) {
+  return s.replace(/\D/g, '');
+}
+
+// Busca reparación validando folio + (correo O teléfono). Devuelve null (no distingue el motivo).
+async function findByFolioAndContact(folio: string, contact: string) {
   const repair = await prisma.repair.findUnique({ where: { folio: folio.trim() }, include: fullInclude });
   if (!repair) return null;
-  if (repair.customer.email.toLowerCase() !== email.trim().toLowerCase()) return null;
+  const c = contact.trim().toLowerCase();
+  const emailMatch = !!repair.customer.email && repair.customer.email.toLowerCase() === c;
+  const phoneMatch = !!repair.customer.phone && digitsOnly(repair.customer.phone) === digitsOnly(contact) && digitsOnly(contact).length > 0;
+  if (!emailMatch && !phoneMatch) return null;
   return repair;
 }
 
 // ---------- Consulta pública (§13.1) ----------
-const lookupSchema = z.object({ folio: z.string().min(1), email: z.string().email() });
+const lookupSchema = z.object({ folio: z.string().min(1), contact: z.string().min(1) });
 
 publicRouter.post(
   '/repairs/lookup',
   asyncHandler(async (req, res) => {
-    const { folio, email } = lookupSchema.parse(req.body);
-    const repair = await findByFolioAndEmail(folio, email);
+    const { folio, contact } = lookupSchema.parse(req.body);
+    const repair = await findByFolioAndContact(folio, contact);
     if (!repair) throw new HttpError(404, NOT_FOUND);
     res.json(serializePublicRepair(repair));
   })
@@ -55,20 +63,26 @@ publicRouter.post(
   handleUpload,
   asyncHandler(async (req, res) => {
     const folio = String(req.body.folio || '');
-    const email = String(req.body.email || '');
+    const contact = String(req.body.contact || '');
     const paymentRequestId = String(req.body.payment_request_id || '');
-    if (!folio || !email) throw new HttpError(400, 'Folio y correo son obligatorios');
+    if (!folio || !contact) throw new HttpError(400, 'Folio y correo o teléfono son obligatorios');
     if (!req.file) throw new HttpError(400, 'Adjunta un archivo');
 
-    // Validar folio + correo ANTES de persistir el archivo.
-    const repair = await findByFolioAndEmail(folio, email);
+    // Validar folio + contacto ANTES de persistir el archivo.
+    const repair = await findByFolioAndContact(folio, contact);
     if (!repair) throw new HttpError(404, NOT_FOUND);
 
     const pr = repair.paymentRequests.find((p) => p.id === paymentRequestId);
     if (!pr) throw new HttpError(400, 'Solicitud de pago no válida');
     if (!canUploadProof(repair)) throw new HttpError(409, 'No hay una solicitud de pago activa que admita comprobante');
 
-    const { storedFilename, filePath } = persistProof(req.file);
+    let storedFilename: string;
+    let filePath: string;
+    try {
+      ({ storedFilename, filePath } = persistProof(req.file));
+    } catch (err) {
+      throw new HttpError(400, err instanceof Error ? err.message : 'Archivo inválido');
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.paymentProof.create({

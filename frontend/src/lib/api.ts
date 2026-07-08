@@ -5,31 +5,24 @@ import axios from 'axios';
 // VITE_API_BASE permite apuntar a otro host si el backend vive en un dominio aparte.
 const base = import.meta.env.VITE_API_BASE ?? '';
 
-export const api = axios.create({ baseURL: `${base}/api` });
+export const api = axios.create({ baseURL: `${base}/api`, withCredentials: true });
 
 const TOKEN_KEY = 'rep_token';
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return null;
 }
 export function setToken(token: string | null) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  if (!token) localStorage.removeItem(TOKEN_KEY);
 }
-
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
 
 api.interceptors.response.use(
   (r) => r,
   (error) => {
     // Sesión expirada: limpiar y mandar al login (excepto en rutas públicas).
-    if (error.response?.status === 401 && getToken()) {
+    if (error.response?.status === 401) {
       setToken(null);
-      if (!location.pathname.startsWith('/consultar')) location.href = '/admin/login';
+      if (!location.pathname.startsWith('/consultar') && location.pathname !== '/admin/login') location.href = '/admin/login';
     }
     return Promise.reject(error);
   }

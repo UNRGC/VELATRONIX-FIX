@@ -11,7 +11,7 @@ import { Brand } from '../../components/Brand';
 
 export function Consultar() {
   const [result, setResult] = useState<any | null>(null);
-  const [creds, setCreds] = useState<{ folio: string; email: string } | null>(null);
+  const [creds, setCreds] = useState<{ folio: string; contact: string } | null>(null);
 
   return (
     <div className="public">
@@ -42,12 +42,12 @@ export function Consultar() {
   );
 }
 
-function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; email: string }) => void }) {
-  const { register, handleSubmit } = useForm<{ folio: string; email: string }>();
+function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; contact: string }) => void }) {
+  const { register, handleSubmit } = useForm<{ folio: string; contact: string }>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function submit(d: { folio: string; email: string }) {
+  async function submit(d: { folio: string; contact: string }) {
     setError('');
     setLoading(true);
     try {
@@ -66,7 +66,7 @@ function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; 
       <div className="lookup-hero">
         <div className="terminal">&gt; consulta_reparacion</div>
         <h1>Consulta tu equipo</h1>
-        <p className="muted">Ingresa tu folio y el correo con el que se registró la reparación.</p>
+        <p className="muted">Ingresa tu folio y el correo o teléfono con el que se registró la reparación.</p>
       </div>
       <form className="card card-pad" onSubmit={handleSubmit(submit)}>
         {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
@@ -75,8 +75,8 @@ function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; 
           <input className="input mono" placeholder="REP-20260704-A8K3" {...register('folio', { required: true })} />
         </div>
         <div className="field">
-          <label>Correo electrónico</label>
-          <input className="input" type="email" placeholder="tucorreo@ejemplo.com" {...register('email', { required: true })} />
+          <label>Correo o teléfono</label>
+          <input className="input" placeholder="tucorreo@ejemplo.com o tu teléfono" {...register('contact', { required: true })} />
         </div>
         <button className="btn btn-primary btn-block" disabled={loading}>
           {loading ? 'Consultando…' : 'Consultar reparación'}
@@ -93,7 +93,7 @@ function Result({
   onReset,
 }: {
   data: any;
-  creds: { folio: string; email: string };
+  creds: { folio: string; contact: string };
   onRefresh: (d: any) => void;
   onReset: () => void;
 }) {
@@ -186,7 +186,7 @@ function Result({
   );
 }
 
-function PaymentBlock({ data, creds, onRefresh }: { data: any; creds: { folio: string; email: string }; onRefresh: (d: any) => void }) {
+function PaymentBlock({ data, creds, onRefresh }: { data: any; creds: { folio: string; contact: string }; onRefresh: (d: any) => void }) {
   const p = data.payment;
   const ins = p.instructions;
   const [file, setFile] = useState<File | null>(null);
@@ -200,7 +200,7 @@ function PaymentBlock({ data, creds, onRefresh }: { data: any; creds: { folio: s
     try {
       const fd = new FormData();
       fd.append('folio', creds.folio);
-      fd.append('email', creds.email);
+      fd.append('contact', creds.contact);
       fd.append('payment_request_id', p.paymentRequestId);
       fd.append('file', file);
       const res = (await api.post('/public/repairs/payment-proof', fd)).data;

@@ -14,8 +14,8 @@ servidor, no a un usuario final.
                                     │ red interna de Docker
                     ┌───────────────▼───────────┐   ┌──────────────────┐
                     │  backend (Express + tsx)  │──▶│ postgres (16)    │
-                    │   • migra + siembra al     │   │  vol postgres_data│
-                    │     arrancar               │   └──────────────────┘
+                    │   • sincroniza schema y    │   │  vol postgres_data│
+                    │     siembra al arrancar    │   └──────────────────┘
                     │   • guarda comprobantes en │
                     │     vol uploaded_files      │
                     └────────────────────────────┘
@@ -38,8 +38,13 @@ de API en el build** y el mismo bundle funciona en cualquier dominio.
 ## Variables de entorno
 
 Todas se documentan en [`.env.example`](../.env.example). Las **requeridas** (sin valor por
-defecto seguro): `POSTGRES_PASSWORD`, `JWT_SECRET`, `ADMIN_PASSWORD`, y `DATABASE_URL` coherente
-con el usuario/clave/BD de Postgres. Genera el `JWT_SECRET` con `openssl rand -hex 32`.
+defecto seguro): `POSTGRES_PASSWORD`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, y
+`DATABASE_URL` coherente con el usuario/clave/BD de Postgres. Genera el `JWT_SECRET` con
+`openssl rand -hex 32`.
+
+`APP_PUBLIC_URL` debe apuntar al dominio público de la app. `CORS_ORIGINS` define la allowlist
+del backend cuando el frontend y la API no comparten exactamente el mismo origen; acepta varios
+orígenes separados por coma.
 
 ---
 
@@ -55,6 +60,7 @@ Dokploy es la vía prevista. Usa **Docker Compose** como tipo de aplicación.
 2. **Variables de entorno**
    - Pega en *Environment* el contenido de tu `.env` (basado en `.env.example`).
    - `APP_PUBLIC_URL` = la URL pública que asignes (p.ej. `https://reparaciones.tudominio.com`).
+   - `CORS_ORIGINS` = el/los orígenes permitidos. En despliegue same-origin normalmente coincide con `APP_PUBLIC_URL`.
    - Usa un `SMTP_*` real (Mailpit es solo para desarrollo).
 
 3. **Dominio y proxy**
@@ -65,7 +71,7 @@ Dokploy es la vía prevista. Usa **Docker Compose** como tipo de aplicación.
    - Activa HTTPS (Let's Encrypt) desde Dokploy.
 
 4. **Desplegar**
-   - *Deploy*. En el primer arranque el backend aplica migraciones y crea el admin.
+   - *Deploy*. En el primer arranque el backend sincroniza el schema (`prisma db push`) y crea el admin.
    - Verifica el healthcheck del backend (Dokploy lo muestra) y entra a `https://tu-dominio/consultar`.
 
 5. **Persistencia**
@@ -83,7 +89,7 @@ Dokploy es la vía prevista. Usa **Docker Compose** como tipo de aplicación.
 ```bash
 git clone <repo> && cd VELATRONIX-FIX
 cp .env.example .env
-nano .env                     # define contraseñas, JWT_SECRET, SMTP real, APP_PUBLIC_URL
+nano .env                     # define contraseñas, JWT_SECRET, SMTP real, APP_PUBLIC_URL, CORS_ORIGINS
 docker compose up -d --build  # usa solo el compose base
 ```
 
@@ -114,7 +120,7 @@ Sin Docker (hot-reload): necesitas un Postgres local y `DATABASE_URL` apuntando 
 ```bash
 # Terminal 1 — backend
 cd backend && npm install
-npx prisma migrate deploy && npx tsx prisma/seed.ts
+npx prisma db push && npx tsx prisma/seed.ts
 npm run dev                     # http://localhost:4000
 
 # Terminal 2 — frontend
@@ -131,7 +137,7 @@ npm run dev                     # http://localhost:5173  (proxy /api → :4000)
 git pull
 docker compose up -d --build    # Dokploy: pulsar Deploy
 ```
-Las migraciones nuevas se aplican solas al arrancar el backend (`prisma migrate deploy`).
+Los cambios de schema se sincronizan solos al arrancar el backend (`prisma db push`).
 
 ### Backups
 ```bash
@@ -152,13 +158,16 @@ docker compose logs -f backend
 docker compose logs -f frontend
 ```
 
-### Migraciones de esquema (al desarrollar)
-Tras cambiar `backend/prisma/schema.prisma`:
-```bash
-cd backend && npx prisma migrate dev --name descripcion_del_cambio
-```
-Esto crea un archivo en `backend/prisma/migrations/`. Commítealo: en producción se aplica con
-`migrate deploy` automáticamente.
+### Cambios de esquema (al desarrollar)
+Edita `backend/prisma/schema.prisma` y listo — no hay migraciones que generar ni commitear.
+El siguiente `docker compose up` (o Deploy en Dokploy) sincroniza la base automáticamente
+(`prisma db push`) al arrancar el backend.
+
+> Este flujo (sin historial de migraciones) es válido mientras el proyecto no tenga datos reales
+> en producción: `db push` puede perder datos en cambios destructivos (ej. borrar una columna con
+> información) y no deja rastro de qué cambió ni cuándo. Una vez haya reparaciones/clientes reales
+> que proteger, conviene pasar a migraciones versionadas (`prisma migrate dev` /
+> `prisma migrate deploy`) para poder revisar y revertir cada cambio de schema con seguridad.
 
 ---
 
@@ -175,10 +184,10 @@ Esto crea un archivo en `backend/prisma/migrations/`. Commítealo: en producció
 
 ## Seguridad en producción (checklist)
 
-- [ ] `JWT_SECRET` largo y aleatorio; `ADMIN_PASSWORD` cambiado tras el primer login.
+- [ ] `JWT_SECRET` largo y aleatorio; `ADMIN_PASSWORD` largo, único y definido antes del primer arranque.
 - [ ] `POSTGRES_PASSWORD` fuerte; Postgres **sin** puerto publicado (el base no lo publica).
 - [ ] TLS/HTTPS activo en el proxy (Dokploy/Traefik o el reverse-proxy del VPS).
-- [ ] `SMTP_*` de un proveedor real; `APP_PUBLIC_URL` con el dominio https correcto.
+- [ ] `SMTP_*` de un proveedor real; `APP_PUBLIC_URL` y `CORS_ORIGINS` con dominios https correctos.
 - [ ] Backups periódicos de `postgres_data` y `uploaded_files`.
-- [ ] Los comprobantes se sirven solo autenticado (`/api/payment-proofs/:id/download`) y viven
+- [ ] Los comprobantes se sirven solo para `ADMIN`/`EMPLOYEE` autenticados (`/api/payment-proofs/:id/download`) y viven
       en un volumen fuera del árbol público — no cambiar esa ruta a una carpeta servida por nginx.

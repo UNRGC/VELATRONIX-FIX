@@ -1,7 +1,15 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, RepairStatus } from '@prisma/client';
 import { applyTransition, Actor } from '../repairs/stateMachine';
 
 export const PAYMENT_METHODS = ['TRANSFER', 'DEPOSIT', 'CASH'] as const;
+
+// A qué estado debe regresar la reparación cuando el pago solicitado desde `fromStatus`
+// se valide. El equipo ya reparado (o listo) que necesita un pago final vuelve a ese mismo
+// estado; cualquier otro origen (diagnóstico, en proceso) converge, como siempre, a "en proceso".
+export function paymentReturnStatus(fromStatus: RepairStatus): RepairStatus {
+  if (fromStatus === 'REPARACION_REALIZADA' || fromStatus === 'LISTO_PARA_ENTREGA') return fromStatus;
+  return 'EN_PROCESO_REPARACION';
+}
 
 // Campos de PaymentSettings que se muestran al cliente (JSON-safe, sin fechas ni IDs).
 const SNAPSHOT_FIELDS = [
@@ -34,7 +42,7 @@ function toSnapshot(settings: Record<string, unknown> | null): Prisma.InputJsonV
 export async function createPaymentRequest(
   tx: Prisma.TransactionClient,
   repairId: string,
-  data: { amount: number; concept: string; allowedMethods?: string[] },
+  data: { amount: number; concept: string; allowedMethods?: string[]; returnStatus?: RepairStatus },
   actor: Actor
 ) {
   const settings = await tx.paymentSettings.findFirst({ orderBy: { updatedAt: 'desc' } });
@@ -46,6 +54,7 @@ export async function createPaymentRequest(
       allowedMethods: data.allowedMethods?.length ? data.allowedMethods : [...PAYMENT_METHODS],
       instructionsSnapshot: toSnapshot(settings as Record<string, unknown> | null),
       status: 'PENDING',
+      returnStatus: data.returnStatus,
       createdByUserId: actor.type === 'INTERNAL_USER' ? actor.userId : undefined,
     },
   });
@@ -85,7 +94,7 @@ export async function validatePayment(tx: Prisma.TransactionClient, paymentReque
   });
   await tx.repair.update({ where: { id: pr.repairId }, data: { paymentStatus: 'VALIDATED' } });
 
-  const repair = await applyTransition(tx, pr.repairId, 'EN_PROCESO_REPARACION', actor, {
+  const repair = await applyTransition(tx, pr.repairId, pr.returnStatus ?? 'EN_PROCESO_REPARACION', actor, {
     actionOverride: 'Pago validado',
     publicNote: 'Pago confirmado. La reparación continuará conforme al diagnóstico indicado.',
   });

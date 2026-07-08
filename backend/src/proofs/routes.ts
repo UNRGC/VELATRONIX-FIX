@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import fs from 'fs';
+import path from 'path';
+import { Role } from '@prisma/client';
 import { prisma } from '../prisma';
 import { asyncHandler, HttpError } from '../http';
-import { requireAuth } from '../auth/middleware';
+import { requireAuth, requireRole } from '../auth/middleware';
+import { env } from '../env';
 
 export const proofsRouter = Router();
 // Los comprobantes solo se consultan/descargan autenticado (§18).
-proofsRouter.use(requireAuth);
+proofsRouter.use(requireAuth, requireRole(Role.ADMIN, Role.EMPLOYEE));
 
 proofsRouter.get(
   '/',
@@ -41,9 +44,13 @@ proofsRouter.get(
   asyncHandler(async (req, res) => {
     const proof = await prisma.paymentProof.findUnique({ where: { id: req.params.id } });
     if (!proof) throw new HttpError(404, 'Comprobante no encontrado');
-    if (!fs.existsSync(proof.filePath)) throw new HttpError(410, 'El archivo ya no está disponible');
+    const uploadRoot = path.resolve(env.uploadDir);
+    const filePath = path.resolve(proof.filePath);
+    if (!filePath.startsWith(`${uploadRoot}${path.sep}`)) throw new HttpError(400, 'Ruta de archivo inválida');
+    if (!fs.existsSync(filePath)) throw new HttpError(410, 'El archivo ya no está disponible');
     res.setHeader('Content-Type', proof.mimeType);
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(proof.originalFilename)}"`);
-    fs.createReadStream(proof.filePath).pipe(res);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(proof.originalFilename)}`);
+    fs.createReadStream(filePath).pipe(res);
   })
 );

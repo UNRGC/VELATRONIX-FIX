@@ -10,6 +10,8 @@ export async function emailClient(
   customer: Pick<Customer, 'name' | 'email'>,
   extra: Partial<EmailContext> = {}
 ) {
+  // Sin correo (cliente registrado solo con teléfono): no hay a dónde enviar el aviso.
+  if (!customer.email) return;
   const ctx: EmailContext = {
     folio: repair.folio,
     customerName: customer.name,

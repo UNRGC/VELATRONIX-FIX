@@ -40,6 +40,10 @@ export function NewRepair() {
 
   async function onSubmit(d: Form) {
     setError('');
+    if (!d.email && !d.phone) {
+      setError('Captura correo o teléfono del cliente');
+      return;
+    }
     try {
       const body = {
         customer: { name: d.name, email: d.email, phone: d.phone || undefined },
@@ -66,15 +70,21 @@ export function NewRepair() {
     return (
       <div style={{ maxWidth: 520 }}>
         <h1 className="page-title">Reparación registrada</h1>
-        <p className="page-sub">Se generó el folio y se envió un correo al cliente.</p>
+        <p className="page-sub">Se generó el folio y se notificó al cliente.</p>
         <div className="card card-pad" style={{ textAlign: 'center' }}>
           <div className="eyebrow">Folio generado</div>
           <div className="mono" style={{ fontSize: 30, fontWeight: 600, margin: '10px 0 6px' }}>
             {created.folio}
           </div>
-          <p className="muted">El cliente puede consultar con este folio y su correo.</p>
+          <p className="muted">El cliente puede consultar con este folio y su correo o teléfono.</p>
           <div className="row" style={{ justifyContent: 'center', marginTop: 16 }}>
-            <Link to={`/admin/reparaciones/${created.id}`} className="btn btn-primary">
+            <button
+              className="btn btn-primary"
+              onClick={() => window.open(`/admin/reparaciones/${created.id}/imprimir`, '_blank')}
+            >
+              Imprimir comprobante
+            </button>
+            <Link to={`/admin/reparaciones/${created.id}`} className="btn btn-ghost">
               Abrir reparación
             </Link>
             <button className="btn btn-ghost" onClick={() => setCreated(null)}>
@@ -105,14 +115,17 @@ export function NewRepair() {
                 <input className="input" {...register('name', { required: true })} />
               </div>
               <div className="field">
-                <label>Correo *</label>
-                <input className="input" type="email" {...register('email', { required: true })} />
+                <label>Correo</label>
+                <input className="input" type="email" {...register('email')} />
               </div>
             </div>
             <div className="field" style={{ maxWidth: 260 }}>
               <label>Teléfono</label>
               <input className="input" {...register('phone')} />
             </div>
+            <p className="muted" style={{ fontSize: 12, marginTop: -8 }}>
+              Se requiere al menos uno: correo o teléfono. Sin correo, el cliente no recibirá avisos por email pero podrá dar seguimiento con su folio y teléfono.
+            </p>
           </div>
         </div>
 

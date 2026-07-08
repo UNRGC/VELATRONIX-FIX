@@ -15,7 +15,7 @@ y el favicon en `public/favicon.svg`.
 
 ## Rutas
 
-- **Pública:** `/consultar` — formulario folio+correo y vista de resultado con riel de estados,
+- **Pública:** `/consultar` — formulario folio+correo/teléfono y vista de resultado con riel de estados,
   datos de pago y carga de comprobante.
 - **Interna:** `/admin/login`, `/admin` (dashboard), `/admin/reparaciones`,
   `/admin/reparaciones/nueva`, `/admin/reparaciones/:id`, `/admin/pagos-pendientes`,
@@ -28,6 +28,7 @@ sirve el reverse-proxy de nginx (`nginx.conf`) y en desarrollo el proxy de Vite 
 No hace falta hornear ninguna URL de API en el build. Solo si el backend vive en otro dominio,
 define `VITE_API_BASE` (p.ej. `https://api.midominio.com`).
 
-El token JWT se guarda en `localStorage` y se adjunta vía interceptor de Axios. Los permisos de
-UI (`src/lib/auth.tsx` → `can`) reflejan la matriz del backend, pero la autorización real se
-valida en el servidor.
+La sesión interna usa cookie `HttpOnly` emitida por el backend. Axios envía credenciales con
+`withCredentials`; `localStorage` solo se limpia para migrar sesiones antiguas. Los permisos de UI
+(`src/lib/auth.tsx` → `can`) reflejan la matriz del backend, pero la autorización real se valida
+en el servidor.
