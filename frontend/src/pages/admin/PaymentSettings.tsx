@@ -40,7 +40,7 @@ export function PaymentSettingsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 640 }}>
+    <div>
       <h1 className="page-title">Datos de pago</h1>
       <p className="page-sub">Se muestran al cliente cuando una reparación requiere pago</p>
 

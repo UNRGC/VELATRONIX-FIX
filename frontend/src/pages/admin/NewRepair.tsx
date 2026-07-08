@@ -68,7 +68,7 @@ export function NewRepair() {
 
   if (created) {
     return (
-      <div style={{ maxWidth: 520 }}>
+      <div>
         <h1 className="page-title">Reparación registrada</h1>
         <p className="page-sub">Se generó el folio y se notificó al cliente.</p>
         <div className="card card-pad" style={{ textAlign: 'center' }}>
@@ -97,7 +97,7 @@ export function NewRepair() {
   }
 
   return (
-    <div style={{ maxWidth: 720 }}>
+    <div>
       <h1 className="page-title">Nueva reparación</h1>
       <p className="page-sub">Registra el cliente y el equipo recibido</p>
 

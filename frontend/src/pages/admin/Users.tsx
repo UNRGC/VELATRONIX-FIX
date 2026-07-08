@@ -52,7 +52,7 @@ export function Users() {
   }
 
   return (
-    <div style={{ maxWidth: 860 }}>
+    <div>
       <h1 className="page-title">Usuarios</h1>
       <p className="page-sub">Administra el personal con acceso al panel</p>
 
