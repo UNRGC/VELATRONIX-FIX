@@ -33,7 +33,7 @@ export function RepairPrint() {
         </button>
       </div>
 
-      <div className="row between" style={{ marginBottom: 20 }}>
+      <div className="row between" style={{ marginBottom: 14 }}>
         <Brand sub="Comprobante de recepción" />
         <div style={{ textAlign: 'right' }}>
           <div className="eyebrow">Folio</div>
@@ -42,6 +42,17 @@ export function RepairPrint() {
           </div>
         </div>
       </div>
+
+      <div
+        style={{
+          height: 3,
+          borderRadius: 2,
+          marginBottom: 22,
+          background: 'linear-gradient(90deg, var(--brand-green-bright), var(--brand-green) 45%, var(--brand-blue))',
+          printColorAdjust: 'exact',
+          WebkitPrintColorAdjust: 'exact',
+        }}
+      />
 
       <div className="card">
         <div className="card-head">

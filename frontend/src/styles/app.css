@@ -308,9 +308,9 @@
   min-height: 100vh;
 }
 .sidebar {
-  background: var(--ink);
-  color: #cdd6db;
-  padding: 20px 14px;
+  background: var(--brand-blue-dark);
+  color: rgba(255, 255, 255, 0.82);
+  padding: 18px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -318,24 +318,13 @@
   top: 0;
   height: 100vh;
 }
+/* Placa blanca: el logotipo a color siempre se lee sobre superficie clara */
 .brand {
-  padding: 6px 10px 20px;
-  border-bottom: 1px solid #2a3843;
-  margin-bottom: 12px;
-}
-.brand .mark {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 17px;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-.brand .sub {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-top: 2px;
+  background: #fff;
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
 }
 .nav-item {
   display: flex;
@@ -343,12 +332,12 @@
   gap: 10px;
   padding: 9px 11px;
   border-radius: var(--r-sm);
-  color: #cdd6db;
+  color: rgba(255, 255, 255, 0.82);
   font-size: 13px;
   font-weight: 500;
 }
 .nav-item:hover {
-  background: #22303a;
+  background: rgba(255, 255, 255, 0.09);
   text-decoration: none;
   color: #fff;
 }
@@ -520,21 +509,15 @@
   display: flex;
   flex-direction: column;
 }
+/* Header público claro con filo de marca verde → azul (firma del logo) */
 .public-top {
-  background: var(--ink);
-  color: #fff;
-  padding: 16px 24px;
-}
-.public-top .mark {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 16px;
-}
-.public-top .sub {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
+  color: var(--ink);
+  padding: 18px 24px;
+  border-bottom: 3px solid transparent;
+  background-image: linear-gradient(var(--surface), var(--surface)),
+    linear-gradient(90deg, var(--brand-green-bright), var(--brand-green) 45%, var(--brand-blue));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
 }
 .public-wrap {
   flex: 1;

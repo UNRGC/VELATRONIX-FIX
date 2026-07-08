@@ -15,14 +15,17 @@
   --ink-soft: #45555f;
   --ink-faint: #6b7a85;
 
-  /* Acento de marca (verde Velatronix) */
-  --accent: #1c7a34;
-  --accent-ink: #145226;
-  --accent-wash: #e3f3e5;
+  /* Marca Velatronix — derivada del logotipo */
+  --brand-green: #0e8a3c;        /* verde principal (cuerpo de las letras) */
+  --brand-green-dark: #0a6b30;   /* verde oscuro (mitad superior) */
+  --brand-green-bright: #37b34a; /* verde brillante (mitad inferior) */
+  --brand-blue: #2b2e92;         /* azul señal (icono + bajada tipográfica) */
+  --brand-blue-dark: #20236b;    /* azul profundo — cromo del panel */
 
-  /* Verde claro y azul de marca (icono/señal del logo) */
-  --brand-green-bright: #4caf3c;
-  --brand-blue: #1f2b6e;
+  /* Acento de marca */
+  --accent: var(--brand-green);
+  --accent-ink: var(--brand-green-dark);
+  --accent-wash: #e4f4e8;
 
   /* Espectro de estado (LEDs de señal) */
   --sig-wait: #c77b1a;     /* ámbar — en espera */

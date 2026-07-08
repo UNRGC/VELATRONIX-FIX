@@ -2,19 +2,23 @@ import { env } from '../env';
 
 function layout(title: string, bodyHtml: string): string {
   const consultUrl = `${env.appPublicUrl}/consultar`;
+  const logoUrl = `${env.appPublicUrl}/brand/logo.png`;
   return `<!doctype html><html lang="es"><body style="margin:0;background:#F5F7F8;font-family:Arial,Helvetica,sans-serif;color:#16202A;">
   <div style="max-width:560px;margin:0 auto;padding:24px;">
-    <div style="margin-bottom:24px;">
-      <span style="font-family:'Space Grotesk',Arial,sans-serif;font-weight:700;font-size:20px;color:#16202A;letter-spacing:-0.01em;">Vela<span style="color:#12707A;">tronix</span></span>
-      <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#12707A;margin-top:2px;">${env.smtp.fromName}</div>
-    </div>
-    <div style="background:#fff;border:1px solid #E1E7EA;border-radius:8px;padding:28px;">
-      <h1 style="font-size:20px;margin:0 0 16px;">${title}</h1>
-      ${bodyHtml}
+    <div style="background:#fff;border:1px solid #E1E7EA;border-radius:8px;border-bottom:3px solid #37B34A;overflow:hidden;">
+      <div style="padding:20px 28px 16px;">
+        <img src="${logoUrl}" alt="Velatronix" width="176" style="display:block;height:auto;max-width:176px;border:0;" />
+        <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#2B2E92;margin-top:8px;">${env.smtp.fromName}</div>
+      </div>
+      <div style="height:1px;background:#E1E7EA;"></div>
+      <div style="padding:24px 28px 28px;">
+        <h1 style="font-family:Arial,Helvetica,sans-serif;font-size:20px;margin:0 0 16px;color:#16202A;">${title}</h1>
+        ${bodyHtml}
+      </div>
     </div>
     <p style="font-size:12px;color:#6B7A85;margin-top:20px;">
       Consulta el estado de tu equipo en
-      <a href="${consultUrl}" style="color:#12707A;">${consultUrl}</a> con tu folio y correo.
+      <a href="${consultUrl}" style="color:#0E8A3C;">${consultUrl}</a> con tu folio y correo.
     </p>
   </div></body></html>`;
 }

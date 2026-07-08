@@ -15,7 +15,7 @@ export function Consultar() {
 
   return (
     <div className="public">
-      <div className="public-top" style={{ color: '#fff' }}>
+      <div className="public-top">
         <Brand sub="Consulta de servicio" />
       </div>
       <div className="public-wrap">

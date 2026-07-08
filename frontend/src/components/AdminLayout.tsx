@@ -20,7 +20,7 @@ export function AdminLayout() {
   return (
     <div className="admin">
       <aside className="sidebar">
-        <div className="brand" style={{ color: '#fff' }}>
+        <div className="brand">
           <Brand sub="Panel de servicio" />
         </div>
 
