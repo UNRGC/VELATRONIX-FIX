@@ -1,7 +1,26 @@
 const LOGO_SRC = "/brand/logo.png";
+// Proporción real del archivo (5858×1124). Fijarla evita que el logo se aplane
+// si un contenedor angosto intenta estirarlo a lo ancho.
+const LOGO_RATIO = 5858 / 1124;
 
 export function Logo({ height = 32 }: { height?: number }) {
-    return <img src={LOGO_SRC} alt="Velatronix" height={height} style={{ display: "block", height, width: "auto", flexShrink: 0 }} />;
+    return (
+        <img
+            src={LOGO_SRC}
+            alt="Velatronix"
+            width={Math.round(height * LOGO_RATIO)}
+            height={height}
+            style={{
+                display: "block",
+                height,
+                width: "auto",
+                maxWidth: "100%",
+                aspectRatio: `${LOGO_RATIO}`,
+                objectFit: "contain",
+                flexShrink: 0,
+            }}
+        />
+    );
 }
 
 export function Brand({ sub, logoSize = 32 }: { sub?: string; logoSize?: number }) {

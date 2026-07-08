@@ -308,8 +308,9 @@
   min-height: 100vh;
 }
 .sidebar {
-  background: var(--brand-blue-dark);
-  color: rgba(255, 255, 255, 0.82);
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-right: 1px solid var(--line);
   padding: 18px 14px;
   display: flex;
   flex-direction: column;
@@ -318,13 +319,11 @@
   top: 0;
   height: 100vh;
 }
-/* Placa blanca: el logotipo a color siempre se lee sobre superficie clara */
+/* El logotipo a color se lee directamente sobre la barra clara */
 .brand {
-  background: #fff;
-  border-radius: var(--r-md);
-  padding: 12px 14px;
-  margin-bottom: 18px;
-  box-shadow: var(--shadow);
+  padding: 6px 6px 16px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
 }
 .nav-item {
   display: flex;
@@ -332,18 +331,19 @@
   gap: 10px;
   padding: 9px 11px;
   border-radius: var(--r-sm);
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--ink-soft);
   font-size: 13px;
   font-weight: 500;
 }
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: var(--surface-sunk);
   text-decoration: none;
-  color: #fff;
+  color: var(--ink);
 }
 .nav-item.active {
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  font-weight: 600;
 }
 .nav-item .count {
   margin-left: auto;
@@ -355,7 +355,7 @@
   padding: 1px 7px;
 }
 .nav-item.active .count {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--sig-alert);
 }
 .main {
   display: flex;
