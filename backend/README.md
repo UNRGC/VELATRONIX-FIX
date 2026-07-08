@@ -1,6 +1,8 @@
-# Backend — API de reparaciones
+# Backend Velatronix — API de reparaciones
 
-Express + TypeScript + Prisma + PostgreSQL.
+Express + TypeScript + Prisma + PostgreSQL. Imagen Docker basada en `node:20-slim` (con OpenSSL
+para Prisma). El arranque en contenedor (`docker-entrypoint.sh`) aplica migraciones, siembra el
+admin y levanta la API.
 
 ## Scripts
 

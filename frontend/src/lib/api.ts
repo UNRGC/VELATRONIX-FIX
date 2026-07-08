@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Por defecto same-origin: el frontend llama a "/api" y nginx (prod) o el proxy de
+// Vite (dev) lo reenvía al backend. Así funciona en cualquier dominio sin recompilar.
+// VITE_API_BASE permite apuntar a otro host si el backend vive en un dominio aparte.
+const base = import.meta.env.VITE_API_BASE ?? '';
 
-export const api = axios.create({ baseURL: `${baseURL}/api` });
+export const api = axios.create({ baseURL: `${base}/api` });
 
 const TOKEN_KEY = 'rep_token';
 

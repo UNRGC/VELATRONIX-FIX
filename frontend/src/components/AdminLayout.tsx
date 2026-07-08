@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { can, useAuth } from '../lib/auth';
+import { Brand } from './Brand';
 
 const ROLE_LABEL: Record<string, string> = { ADMIN: 'Administrador', EMPLOYEE: 'Recepción', TECHNICIAN: 'Técnico' };
 
@@ -19,9 +20,8 @@ export function AdminLayout() {
   return (
     <div className="admin">
       <aside className="sidebar">
-        <div className="brand">
-          <div className="mark">Taller</div>
-          <div className="sub">Panel de servicio</div>
+        <div className="brand" style={{ color: '#fff' }}>
+          <Brand sub="Panel de servicio" />
         </div>
 
         <NavLink to="/admin" end className="nav-item">

@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { apiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { Brand } from '../../components/Brand';
 
 interface Form {
   email: string;
@@ -30,11 +31,8 @@ export function Login() {
   return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
-        <div className="brand" style={{ border: 'none', textAlign: 'center', marginBottom: 8 }}>
-          <div className="mark" style={{ color: 'var(--ink)', fontSize: 22 }}>
-            Taller de Reparaciones
-          </div>
-          <div className="sub">Panel de servicio</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, color: 'var(--ink)' }}>
+          <Brand sub="Panel de servicio" logoSize={34} wordSize={24} />
         </div>
         <form className="card card-pad" onSubmit={handleSubmit(onSubmit)}>
           <h1 className="page-title" style={{ fontSize: 18, marginBottom: 18 }}>

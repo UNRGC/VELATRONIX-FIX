@@ -5,6 +5,7 @@ import { StatusRail } from '../../components/StatusRail';
 import { StatusBadge } from '../../components/StatusBadge';
 import { fmtDate, fmtDay, fmtMoney } from '../../lib/format';
 import { DEVICE_LABELS, METHOD_LABELS, PAYMENT_STATUS_LABELS, RepairStatus } from '../../lib/status';
+import { Brand } from '../../components/Brand';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -14,9 +15,8 @@ export function Consultar() {
 
   return (
     <div className="public">
-      <div className="public-top">
-        <div className="mark">Taller de Reparaciones</div>
-        <div className="sub">Consulta de servicio</div>
+      <div className="public-top" style={{ color: '#fff' }}>
+        <Brand sub="Consulta de servicio" />
       </div>
       <div className="public-wrap">
         {!result ? (

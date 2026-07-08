@@ -1,7 +1,7 @@
 # Requerimientos (resumen)
 
-Sistema independiente, enlazable desde la landing existente, para gestionar reparaciones de
-equipos electrónicos en un negocio de electrónica.
+Sistema independiente de **Velatronix**, enlazable desde la landing existente, para gestionar
+reparaciones de equipos electrónicos (electrónica, instalaciones y reparaciones).
 
 ## Alcance incluido
 

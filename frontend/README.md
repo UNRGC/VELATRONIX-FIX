@@ -1,7 +1,9 @@
-# Frontend — Panel y consulta pública
+# Frontend Velatronix — Panel y consulta pública
 
 React + TypeScript + Vite. Diseño propio ("banco de servicio / instrumento de diagnóstico")
-con tokens en `src/styles/tokens.css` y componentes en `src/styles/app.css`.
+con tokens en `src/styles/tokens.css` y componentes en `src/styles/app.css`. La identidad de
+marca (logo "V" con punto de señal, wordmark **Vela**tronix) vive en `src/components/Brand.tsx`
+y el favicon en `public/favicon.svg`.
 
 ## Scripts
 
@@ -21,7 +23,11 @@ con tokens en `src/styles/tokens.css` y componentes en `src/styles/app.css`.
 
 ## Configuración
 
-`VITE_API_URL` (build-time) apunta al backend. En Docker se pasa como `ARG` en el Dockerfile.
-El token JWT se guarda en `localStorage` y se adjunta vía interceptor de Axios (`src/lib/api.ts`).
-Los permisos de UI (`src/lib/auth.tsx` → `can`) reflejan la matriz del backend, pero la
-autorización real se valida en el servidor.
+Por defecto la app llama a `/api` en el **mismo origen** (`src/lib/api.ts`): en producción lo
+sirve el reverse-proxy de nginx (`nginx.conf`) y en desarrollo el proxy de Vite (`vite.config.ts`).
+No hace falta hornear ninguna URL de API en el build. Solo si el backend vive en otro dominio,
+define `VITE_API_BASE` (p.ej. `https://api.midominio.com`).
+
+El token JWT se guarda en `localStorage` y se adjunta vía interceptor de Axios. Los permisos de
+UI (`src/lib/auth.tsx` → `can`) reflejan la matriz del backend, pero la autorización real se
+valida en el servidor.

@@ -4,8 +4,9 @@ function layout(title: string, bodyHtml: string): string {
   const consultUrl = `${env.appPublicUrl}/consultar`;
   return `<!doctype html><html lang="es"><body style="margin:0;background:#F5F7F8;font-family:Arial,Helvetica,sans-serif;color:#16202A;">
   <div style="max-width:560px;margin:0 auto;padding:24px;">
-    <div style="border-left:4px solid #12707A;padding:4px 16px;margin-bottom:24px;">
-      <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#12707A;">${env.smtp.fromName}</div>
+    <div style="margin-bottom:24px;">
+      <span style="font-family:'Space Grotesk',Arial,sans-serif;font-weight:700;font-size:20px;color:#16202A;letter-spacing:-0.01em;">Vela<span style="color:#12707A;">tronix</span></span>
+      <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#12707A;margin-top:2px;">${env.smtp.fromName}</div>
     </div>
     <div style="background:#fff;border:1px solid #E1E7EA;border-radius:8px;padding:28px;">
       <h1 style="font-size:20px;margin:0 0 16px;">${title}</h1>

@@ -19,8 +19,8 @@ export const env = {
     port: parseInt(process.env.SMTP_PORT || '1025', 10),
     user: process.env.SMTP_USER || '',
     password: process.env.SMTP_PASSWORD || '',
-    fromName: process.env.SMTP_FROM_NAME || 'Taller de Reparaciones',
-    fromEmail: process.env.SMTP_FROM_EMAIL || 'no-reply@reparaciones.local',
+    fromName: process.env.SMTP_FROM_NAME || 'Velatronix Reparaciones',
+    fromEmail: process.env.SMTP_FROM_EMAIL || 'no-reply@velatronix.local',
   },
   internalNotifyEmails: (process.env.INTERNAL_NOTIFY_EMAILS || '')
     .split(',')

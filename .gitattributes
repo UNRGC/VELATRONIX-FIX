@@ -1,0 +1,13 @@
+# El proyecto se construye y ejecuta en Linux (contenedores). Normaliza saltos de
+# línea a LF para evitar que scripts con CRLF rompan en la imagen (bad interpreter).
+* text=auto eol=lf
+
+# Scripts de shell: siempre LF, sin excepción.
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+
+# Binarios (no tocar).
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
