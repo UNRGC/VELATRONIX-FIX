@@ -1,6 +1,6 @@
 import { RepairStatus, PaymentStatus } from '@prisma/client';
 
-// Etiquetas públicas (§8.1). El cliente nunca ve los códigos internos.
+// Etiquetas públicas: el cliente no ve los códigos internos del enum.
 export const STATUS_LABELS: Record<RepairStatus, string> = {
   EN_ESPERA_REVISION: 'En espera de revisión',
   EN_DIAGNOSTICO: 'En proceso de diagnóstico',

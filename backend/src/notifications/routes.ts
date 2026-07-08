@@ -6,7 +6,7 @@ import { AuthedRequest, requireAuth } from '../auth/middleware';
 export const notificationsRouter = Router();
 notificationsRouter.use(requireAuth);
 
-// Notificaciones dirigidas al rol del usuario o directamente a él.
+// Notificaciones visibles por rol o asignadas directamente al usuario.
 function scope(req: AuthedRequest) {
   return { OR: [{ recipientRole: req.user!.role }, { recipientUserId: req.user!.id }] };
 }

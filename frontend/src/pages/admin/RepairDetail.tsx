@@ -82,7 +82,7 @@ export function RepairDetail() {
   );
 }
 
-/* ---------- Acciones por estado/rol ---------- */
+/* Acciones por estado y rol */
 function ActionsBar({
   role,
   status,
@@ -127,7 +127,7 @@ function ActionsBar({
   );
 }
 
-/* ---------- Datos de cliente y equipo ---------- */
+/* Datos de cliente y equipo */
 function DataSection({ repair, role, onSaved }: { repair: Repair; role?: Role; onSaved: () => void }) {
   const [edit, setEdit] = useState(false);
   const [error, setError] = useState('');
@@ -252,7 +252,7 @@ function DataSection({ repair, role, onSaved }: { repair: Repair; role?: Role; o
   );
 }
 
-/* ---------- Diagnóstico ---------- */
+/* Diagnóstico */
 function DiagnosisSection({
   repair,
   role,
@@ -405,7 +405,7 @@ function DiagnosisSection({
   );
 }
 
-/* ---------- Pagos y comprobantes ---------- */
+/* Pagos y comprobantes */
 const ACTIVE_PR = ['PENDING', 'PROOF_RECEIVED', 'REJECTED'];
 const CAN_REQUEST_FROM: RepairStatus[] = [
   'DIAGNOSTICADO',
@@ -415,7 +415,7 @@ const CAN_REQUEST_FROM: RepairStatus[] = [
   'LISTO_PARA_ENTREGA',
 ];
 
-// Sugerencias nativas (datalist) para el concepto de pago: pago inicial, piezas, o el pago final antes de entregar.
+// Sugerencias nativas para conceptos frecuentes de pago.
 const PAYMENT_CONCEPT_SUGGESTIONS = ['Pago inicial', 'Anticipo de piezas', 'Pago de reparación'];
 
 function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Role; onChange: () => void }) {
@@ -595,7 +595,7 @@ function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Rol
   );
 }
 
-/* ---------- Historial completo ---------- */
+/* Historial completo */
 function HistorySection({ history }: { history: any[] }) {
   return (
     <div className="card">

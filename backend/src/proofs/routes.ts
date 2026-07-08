@@ -8,7 +8,7 @@ import { requireAuth, requireRole } from '../auth/middleware';
 import { env } from '../env';
 
 export const proofsRouter = Router();
-// Los comprobantes solo se consultan/descargan autenticado (§18).
+// Los comprobantes solo se consultan o descargan desde sesión interna autorizada.
 proofsRouter.use(requireAuth, requireRole(Role.ADMIN, Role.EMPLOYEE));
 
 proofsRouter.get(

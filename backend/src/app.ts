@@ -48,17 +48,17 @@ export function buildApp() {
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-  // Público (sin auth)
+  // Rutas públicas con límites propios: consulta de folio y carga de comprobantes.
   app.use('/api/public/repairs/lookup', publicLimiter);
   app.use('/api/public/repairs/payment-proof', publicLimiter);
   app.use('/api/public', publicRouter);
 
-  // Privado
+  // Rutas internas: la autorización fina se aplica en cada router.
   app.use('/api/auth/login', authLimiter);
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/repairs', repairsRouter);
-  app.use('/api', paymentsRouter); // /repairs/:id/payment-request, /payment-requests/:id/...
+  app.use('/api', paymentsRouter); // Expone prefijos de reparación y solicitudes de pago.
   app.use('/api/payment-proofs', proofsRouter);
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/payment-settings', settingsRouter);

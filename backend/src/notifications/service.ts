@@ -1,7 +1,7 @@
 import { Prisma, Role } from '@prisma/client';
 import { prisma } from '../prisma';
 
-// Crea una notificación in-panel dirigida a un rol (p. ej. ADMIN ve comprobantes nuevos).
+// Crea una notificación interna dirigida a un rol.
 export async function notifyRole(
   role: Role,
   data: { type: string; title: string; message: string; repairId?: string },

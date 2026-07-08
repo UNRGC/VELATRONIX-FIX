@@ -54,7 +54,7 @@ function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; 
       const data = (await api.post('/public/repairs/lookup', d)).data;
       onFound(data, d);
     } catch (e) {
-      // Mensaje genérico: no revela si el folio existe (§15.3).
+      // Mensaje genérico: no revela si falló el folio o el dato de contacto.
       setError(apiError(e, 'No se encontró una reparación con los datos proporcionados.'));
     } finally {
       setLoading(false);

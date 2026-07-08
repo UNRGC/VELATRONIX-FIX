@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// Por defecto same-origin: el frontend llama a "/api" y nginx (prod) o el proxy de
-// Vite (dev) lo reenvía al backend. Así funciona en cualquier dominio sin recompilar.
-// VITE_API_BASE permite apuntar a otro host si el backend vive en un dominio aparte.
+// Same-origin por defecto: nginx en producción y Vite en desarrollo reenvían "/api".
+// VITE_API_BASE permite separar frontend y backend en dominios distintos.
 const base = import.meta.env.VITE_API_BASE ?? '';
 
 export const api = axios.create({ baseURL: `${base}/api`, withCredentials: true });
@@ -34,8 +33,7 @@ export function apiError(err: unknown, fallback = 'Ocurrió un error'): string {
   return fallback;
 }
 
-// URL absoluta de descarga (para abrir comprobante en nueva pestaña — requiere token en header,
-// por eso se descarga vía fetch con blob).
+// Descarga autenticada como blob para abrir comprobantes en una pestaña nueva.
 export async function downloadProof(id: string): Promise<string> {
   const res = await api.get(`/payment-proofs/${id}/download`, { responseType: 'blob' });
   return URL.createObjectURL(res.data);

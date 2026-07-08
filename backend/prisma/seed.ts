@@ -26,7 +26,7 @@ async function main() {
     console.log(`[seed] Admin ya existe: ${email}`);
   }
 
-  // Una sola fila de configuración de pago, editable desde el panel.
+  // La configuración de pago es singleton y se edita desde el panel.
   const settingsCount = await prisma.paymentSettings.count();
   if (settingsCount === 0) {
     await prisma.paymentSettings.create({ data: {} });

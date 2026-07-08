@@ -28,7 +28,7 @@ export function NewRepair() {
   const [error, setError] = useState('');
   const [created, setCreated] = useState<{ id: string; folio: string } | null>(null);
 
-  // Solo el admin puede listar usuarios; recepción asigna técnico después si aplica.
+  // Recepción no lista usuarios; la asignación de técnico puede hacerse después.
   const { data: techs } = useQuery({
     queryKey: ['technicians'],
     enabled: user?.role === 'ADMIN',

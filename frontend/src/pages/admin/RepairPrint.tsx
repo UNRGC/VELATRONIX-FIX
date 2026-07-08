@@ -8,7 +8,7 @@ import { Brand } from '../../components/Brand';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Repair = any;
 
-// Vista independiente (sin AdminLayout) pensada para Ctrl+P: comprobante de recepción con folio.
+// Vista independiente para impresión del comprobante de recepción.
 export function RepairPrint() {
   const { id } = useParams();
 

@@ -7,7 +7,7 @@ import { AuthedRequest, requireAuth } from '../auth/middleware';
 export const dashboardRouter = Router();
 dashboardRouter.use(requireAuth);
 
-// Resumen para el dashboard (§16.2).
+// Resumen agregado para el dashboard interno.
 dashboardRouter.get(
   '/',
   asyncHandler(async (req: AuthedRequest, res) => {

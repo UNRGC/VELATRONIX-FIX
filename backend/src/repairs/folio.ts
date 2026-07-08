@@ -18,10 +18,7 @@ export function buildFolio(date = new Date()): string {
   return `REP-${y}${m}${d}-${randomSuffix()}`;
 }
 
-/**
- * Genera un folio único reintentando ante colisión del índice único.
- * El folio NUNCA lo escribe el usuario; se genera al crear la reparación.
- */
+// Genera un folio único reintentando ante colisiones del índice único.
 export async function generateUniqueFolio(
   tx: Prisma.TransactionClient,
   maxAttempts = 8

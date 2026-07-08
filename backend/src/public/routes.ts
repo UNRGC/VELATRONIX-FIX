@@ -11,7 +11,7 @@ import { emailClient, emailInternal } from '../email/notify';
 
 export const publicRouter = Router();
 
-// Mensaje genérico: nunca revelar si el folio existe pero el correo no coincide (§15.3).
+// Mensaje genérico para no revelar si falló el folio o el dato de contacto.
 const NOT_FOUND = 'No se encontró una reparación con los datos proporcionados.';
 
 const fullInclude = {
@@ -36,7 +36,7 @@ async function findByFolioAndContact(folio: string, contact: string) {
   return repair;
 }
 
-// ---------- Consulta pública (§13.1) ----------
+// Consulta pública protegida por folio y dato de contacto.
 const lookupSchema = z.object({ folio: z.string().min(1), contact: z.string().min(1) });
 
 publicRouter.post(
@@ -49,8 +49,7 @@ publicRouter.post(
   })
 );
 
-// ---------- Subida de comprobante (§13.1) ----------
-// Middleware para traducir errores de multer (tipo/tamaño) a 400.
+// Traduce errores de multer (tipo/tamaño) a respuestas 400.
 function handleUpload(req: Request, res: Response, next: NextFunction) {
   uploadProof.single('file')(req, res, (err) => {
     if (err) return next(new HttpError(400, err.message || 'Archivo inválido'));
@@ -68,7 +67,7 @@ publicRouter.post(
     if (!folio || !contact) throw new HttpError(400, 'Folio y correo o teléfono son obligatorios');
     if (!req.file) throw new HttpError(400, 'Adjunta un archivo');
 
-    // Validar folio + contacto ANTES de persistir el archivo.
+    // El archivo solo se persiste después de validar identidad y solicitud activa.
     const repair = await findByFolioAndContact(folio, contact);
     if (!repair) throw new HttpError(404, NOT_FOUND);
 

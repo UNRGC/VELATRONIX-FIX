@@ -42,7 +42,7 @@ function repairForUser<T extends { paymentRequests?: unknown[]; paymentProofs?: 
   };
 }
 
-// ---------- Listado con filtros (§16.3) ----------
+// Listado interno con filtros y alcance limitado para técnicos.
 repairsRouter.get(
   '/',
   asyncHandler(async (req: AuthedRequest, res) => {
@@ -75,7 +75,7 @@ repairsRouter.get(
   })
 );
 
-// ---------- Crear reparación (§16.4) ----------
+// Alta de reparación y folio inicial.
 const createSchema = z.object({
   customer: z
     .object({
@@ -147,7 +147,7 @@ repairsRouter.post(
   })
 );
 
-// ---------- Detalle ----------
+// Detalle completo según permisos del usuario.
 repairsRouter.get(
   '/:id',
   asyncHandler(async (req: AuthedRequest, res) => {
@@ -158,7 +158,7 @@ repairsRouter.get(
   })
 );
 
-// ---------- Editar datos de cliente / equipo (§17: Admin, Empleado) ----------
+// Edición operativa de datos de cliente y equipo.
 const editSchema = z.object({
   customer: z.object({ name: z.string().min(1).optional(), email: z.string().email().optional(), phone: z.string().optional() }).optional(),
   deviceBrand: z.string().optional(),
@@ -194,7 +194,7 @@ repairsRouter.patch(
   })
 );
 
-// ---------- Diagnóstico (§16.6). Admin y Técnico asignado ----------
+// Diagnóstico editable por admin o por técnico asignado.
 const diagnosisSchema = z.object({
   diagnosis: z.string().min(1),
   requiredActions: z.string().optional(),
@@ -238,7 +238,7 @@ repairsRouter.patch(
         },
       });
 
-      // Avanza EN_ESPERA_REVISION → EN_DIAGNOSTICO antes de registrar el diagnóstico.
+      // El primer diagnóstico registra explícitamente el inicio del trabajo técnico.
       let status = repair.status;
       if (status === 'EN_ESPERA_REVISION') {
         await applyTransition(tx, repair.id, 'EN_DIAGNOSTICO', actor);
@@ -246,7 +246,7 @@ repairsRouter.patch(
       }
 
       if (data.requiresPayment) {
-        // No duplicar: si ya hay una solicitud activa, solo se conserva.
+        // Evita duplicar pagos activos; el flujo admite una solicitud pendiente.
         const active = await findActivePaymentRequest(tx, repair.id);
         if (!active) {
           await createPaymentRequest(
@@ -284,7 +284,7 @@ repairsRouter.patch(
   })
 );
 
-// ---------- Cambio de estado genérico (§13.4). Transiciones administrativas ----------
+// Cambio de estado administrativo para transiciones sin efectos colaterales dedicados.
 const statusSchema = z.object({
   status: z.nativeEnum(RepairStatus),
   publicNote: z.string().optional(),
@@ -324,7 +324,7 @@ repairsRouter.patch(
   })
 );
 
-// ---------- Historial ----------
+// Historial interno de movimientos de la reparación.
 repairsRouter.get(
   '/:id/history',
   asyncHandler(async (req: AuthedRequest, res) => {
@@ -340,7 +340,7 @@ repairsRouter.get(
   })
 );
 
-// ---------- Helpers ----------
+// Helpers locales del router.
 function getFullRepair(id: string) {
   return prisma.repair.findUnique({
     where: { id },

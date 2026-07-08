@@ -32,7 +32,7 @@ const createSchema = z.object({
   allowedMethods: z.array(z.enum(['TRANSFER', 'DEPOSIT', 'CASH'])).optional(),
 });
 
-// Crear solicitud de pago (§13.5). Admin o técnico asignado.
+// Solicitud de pago creada por admin o por el técnico asignado.
 paymentsRouter.post(
   '/repairs/:id/payment-request',
   requireRole(Role.ADMIN, Role.TECHNICIAN),
@@ -47,14 +47,13 @@ paymentsRouter.post(
       throw new HttpError(409, 'Ya existe una solicitud de pago activa. Valida o cancela la anterior antes de crear otra.');
     }
 
-    // Si ya estaba en espera de pago (ej. solicitud anterior cancelada), no hay un origen nuevo
-    // que registrar: conserva el comportamiento por defecto de validatePayment.
+    // Si ya estaba en espera de pago, no hay estado de retorno nuevo que capturar.
     const returnStatus = repair.status !== 'EN_ESPERA_PAGO' ? paymentReturnStatus(repair.status) : undefined;
 
     try {
       await prisma.$transaction(async (tx) => {
         await createPaymentRequest(tx, repair.id, { ...data, returnStatus }, actorFrom(req));
-        // Desde el estado actual (diagnóstico, en proceso, o ya reparado) se vuelve a espera de pago.
+        // La transición registra en historial desde qué etapa se pausó la reparación por pago.
         if (repair.status !== 'EN_ESPERA_PAGO') {
           await applyTransition(tx, repair.id, 'EN_ESPERA_PAGO', actorFrom(req), {
             publicNote: 'Se requiere pago o anticipo para continuar con la reparación.',
@@ -87,7 +86,7 @@ paymentsRouter.get(
   })
 );
 
-// Validar / rechazar / cancelar: administrador o recepción.
+// Validación operativa de pagos: solo administración o recepción.
 paymentsRouter.patch(
   '/payment-requests/:id/validate',
   requireRole(Role.ADMIN, Role.EMPLOYEE),

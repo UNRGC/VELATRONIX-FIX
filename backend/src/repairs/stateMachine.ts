@@ -9,8 +9,7 @@ export interface Transition {
   action: string;
 }
 
-// Única fuente de verdad de transiciones válidas. Cualquier salto fuera de este mapa
-// se rechaza en el backend (el frontend nunca fija estados libres).
+// Fuente única de transiciones válidas. Todo salto fuera del mapa se rechaza en backend.
 export const TRANSITIONS: Record<RepairStatus, Transition[]> = {
   EN_ESPERA_REVISION: [
     { to: 'EN_DIAGNOSTICO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Diagnóstico iniciado' },
@@ -29,7 +28,7 @@ export const TRANSITIONS: Record<RepairStatus, Transition[]> = {
   EN_ESPERA_PAGO: [
     { to: 'PAGO_EN_VALIDACION', allow: ['PUBLIC'], action: 'Comprobante de pago recibido' },
     { to: 'EN_PROCESO_REPARACION', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago confirmado en efectivo' },
-    // Pago solicitado ya con el equipo reparado (pieza final / pago contra entrega): regresa ahí, no retrocede a "en proceso".
+    // Pago final solicitado con el equipo reparado: al validarse vuelve al estado previo.
     { to: 'REPARACION_REALIZADA', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago confirmado en efectivo' },
     { to: 'LISTO_PARA_ENTREGA', allow: ['ADMIN', 'EMPLOYEE'], action: 'Pago confirmado en efectivo' },
     { to: 'DEVOLUCION_SIN_REPARACION', allow: ['ADMIN'], action: 'Devolución sin reparación' },
@@ -42,13 +41,13 @@ export const TRANSITIONS: Record<RepairStatus, Transition[]> = {
   ],
   EN_PROCESO_REPARACION: [
     { to: 'REPARACION_REALIZADA', allow: ['ADMIN', 'TECHNICIAN'], action: 'Reparación realizada' },
-    // Pago adicional mid-reparación (ej. piezas descubiertas al trabajar): vuelve a espera de pago.
+    // Pago adicional durante reparación, por ejemplo piezas detectadas al trabajar.
     { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
     { to: 'DEVOLUCION_SIN_REPARACION', allow: ['ADMIN'], action: 'Devolución sin reparación' },
   ],
   REPARACION_REALIZADA: [
     { to: 'LISTO_PARA_ENTREGA', allow: ['ADMIN', 'TECHNICIAN'], action: 'Listo para entrega' },
-    // Pago final antes de entregar (ej. resto de la reparación).
+    // Pago final antes de entregar.
     { to: 'EN_ESPERA_PAGO', allow: ['ADMIN', 'TECHNICIAN'], action: 'Solicitud de pago generada' },
   ],
   LISTO_PARA_ENTREGA: [
@@ -61,8 +60,7 @@ export const TRANSITIONS: Record<RepairStatus, Transition[]> = {
   ENTREGADO_CERRADO: [], // estado terminal
 };
 
-// Transiciones que SOLO pueden ocurrir por un endpoint dedicado (con efectos colaterales),
-// nunca por el endpoint genérico PATCH /status.
+// Transiciones reservadas para endpoints con efectos colaterales propios.
 export const DEDICATED_ONLY: RepairStatus[] = ['DIAGNOSTICADO', 'EN_ESPERA_PAGO', 'PAGO_EN_VALIDACION'];
 
 export type Actor =
@@ -84,11 +82,7 @@ export function findTransition(from: RepairStatus, to: RepairStatus): Transition
 
 export class TransitionError extends Error {}
 
-/**
- * Valida y aplica una transición de estado dentro de una transacción Prisma,
- * escribiendo la entrada de historial correspondiente. Devuelve la reparación actualizada.
- * Lanza TransitionError si la transición no es válida o el actor no está autorizado.
- */
+// Aplica una transición dentro de una transacción y escribe el historial asociado.
 export async function applyTransition(
   tx: Prisma.TransactionClient,
   repairId: string,

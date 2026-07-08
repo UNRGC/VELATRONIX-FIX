@@ -12,16 +12,13 @@ function activePaymentRequest(repair: FullRepair) {
   return repair.paymentRequests.find((pr) => pr.status === 'PENDING' || pr.status === 'REJECTED' || pr.status === 'PROOF_RECEIVED');
 }
 
-// El cliente solo puede subir comprobante si hay pago activo, no validado, y el estado lo permite (§6.1).
+// El cliente solo puede subir comprobante si hay pago activo y la reparación espera pago.
 export function canUploadProof(repair: FullRepair): boolean {
   const pr = activePaymentRequest(repair);
   return repair.status === 'EN_ESPERA_PAGO' && !!pr && (pr.status === 'PENDING' || pr.status === 'REJECTED');
 }
 
-/**
- * Construye la vista pública de una reparación. NUNCA incluye notas internas,
- * IDs de usuarios internos, ni rutas de archivos.
- */
+// Construye la vista pública sin notas internas, IDs de usuarios ni rutas de archivos.
 export function serializePublicRepair(repair: FullRepair) {
   const pr = activePaymentRequest(repair);
   const showPayment = repair.paymentStatus !== 'NOT_REQUIRED' && !!pr;
@@ -30,7 +27,7 @@ export function serializePublicRepair(repair: FullRepair) {
 
   return {
     folio: repair.folio,
-    status: repair.status, // código para resaltar el riel de estados en el frontend
+    status: repair.status, // Código necesario para resaltar el riel de estados.
     statusLabel: STATUS_LABELS[repair.status],
     statusMessage: STATUS_CLIENT_MESSAGE[repair.status],
     customerName: repair.customer.name,

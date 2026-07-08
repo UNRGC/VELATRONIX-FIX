@@ -8,7 +8,7 @@ import { requireAuth, requireRole } from '../auth/middleware';
 
 export const usersRouter = Router();
 
-// Todas las rutas de usuarios son solo para administrador.
+// Administración de usuarios restringida al rol administrador.
 usersRouter.use(requireAuth, requireRole(Role.ADMIN));
 
 const roleEnum = z.nativeEnum(Role);

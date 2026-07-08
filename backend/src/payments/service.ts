@@ -3,9 +3,8 @@ import { applyTransition, Actor } from '../repairs/stateMachine';
 
 export const PAYMENT_METHODS = ['TRANSFER', 'DEPOSIT', 'CASH'] as const;
 
-// A qué estado debe regresar la reparación cuando el pago solicitado desde `fromStatus`
-// se valide. El equipo ya reparado (o listo) que necesita un pago final vuelve a ese mismo
-// estado; cualquier otro origen (diagnóstico, en proceso) converge, como siempre, a "en proceso".
+// Estado de retorno tras validar un pago. Los pagos finales regresan al estado operativo previo;
+// el resto continúa el flujo normal de reparación.
 export function paymentReturnStatus(fromStatus: RepairStatus): RepairStatus {
   if (fromStatus === 'REPARACION_REALIZADA' || fromStatus === 'LISTO_PARA_ENTREGA') return fromStatus;
   return 'EN_PROCESO_REPARACION';
@@ -34,11 +33,8 @@ function toSnapshot(settings: Record<string, unknown> | null): Prisma.InputJsonV
   return snap;
 }
 
-/**
- * Crea una solicitud de pago para una reparación, guardando un snapshot de los datos
- * de pago vigentes. NO cambia el estado de la reparación: el llamador aplica la
- * transición a EN_ESPERA_PAGO (que escribe el historial de estado).
- */
+// Crea la solicitud y congela las instrucciones vigentes. La transición de estado
+// queda en el llamador para que el historial conserve el contexto correcto.
 export async function createPaymentRequest(
   tx: Prisma.TransactionClient,
   repairId: string,
@@ -65,8 +61,8 @@ export async function createPaymentRequest(
   return pr;
 }
 
-// Solicitud de pago "activa": pendiente, con comprobante en validación, o rechazada (reenviable).
-// Solo puede haber una a la vez (pagos secuenciales).
+// Solicitud activa: pendiente, en validación o rechazada con posibilidad de reenvío.
+// El flujo de negocio permite solo una solicitud activa por reparación.
 export function findActivePaymentRequest(tx: Prisma.TransactionClient, repairId: string) {
   return tx.paymentRequest.findFirst({
     where: { repairId, status: { in: ['PENDING', 'PROOF_RECEIVED', 'REJECTED'] } },
@@ -74,7 +70,7 @@ export function findActivePaymentRequest(tx: Prisma.TransactionClient, repairId:
   });
 }
 
-// Valida un pago (con comprobante o en efectivo) y avanza la reparación a EN_PROCESO_REPARACION.
+// Valida el pago y devuelve la reparación al estado que corresponde al origen de la solicitud.
 export async function validatePayment(tx: Prisma.TransactionClient, paymentRequestId: string, actor: Actor) {
   const pr = await tx.paymentRequest.findUnique({ where: { id: paymentRequestId }, include: { repair: { include: { customer: true } } } });
   if (!pr) throw new Error('Solicitud de pago no encontrada');
@@ -124,7 +120,7 @@ export async function rejectPayment(
     where: { paymentRequestId: pr.id, status: 'PENDING' },
     data: { status: 'REJECTED', rejectedAt: new Date(), rejectionReason: reason },
   });
-  // paymentStatus REJECTED, pero permitimos reenvío mientras la reparación siga en espera de pago.
+  // El estado de pago queda rechazado, pero la solicitud sigue activa para permitir reenvío.
   await tx.repair.update({ where: { id: pr.repairId }, data: { paymentStatus: 'REJECTED' } });
 
   const repair = await applyTransition(tx, pr.repairId, 'EN_ESPERA_PAGO', actor, {

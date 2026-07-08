@@ -1,4 +1,4 @@
-/* ---------- Botones ---------- */
+/* Botones */
 .btn {
   font-family: var(--font-body);
   font-size: 13px;
@@ -49,7 +49,7 @@
   justify-content: center;
 }
 
-/* ---------- Campos ---------- */
+/* Campos */
 .field {
   display: flex;
   flex-direction: column;
@@ -99,7 +99,7 @@
   }
 }
 
-/* ---------- Tarjetas ---------- */
+/* Tarjetas */
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -121,7 +121,7 @@
   font-size: 15px;
 }
 
-/* ---------- Tabla ---------- */
+/* Tabla */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -149,7 +149,7 @@
   border-bottom: none;
 }
 
-/* ---------- Insignia de estado (LED de señal) ---------- */
+/* Insignia de estado */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -204,7 +204,7 @@
   background: var(--sig-done);
 }
 
-/* ---------- Riel de estados (elemento firma) ---------- */
+/* Riel de estados */
 .rail {
   display: flex;
   gap: 0;
@@ -301,7 +301,7 @@
   animation: none;
 }
 
-/* ---------- Shell admin ---------- */
+/* Shell admin */
 .admin {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
@@ -405,7 +405,7 @@
   margin-bottom: 22px;
 }
 
-/* ---------- Utilidades ---------- */
+/* Utilidades */
 .row {
   display: flex;
   gap: 12px;
@@ -514,7 +514,7 @@
   border-color: var(--ink);
 }
 
-/* ---------- Vista pública ---------- */
+/* Vista pública */
 .public {
   min-height: 100vh;
   display: flex;

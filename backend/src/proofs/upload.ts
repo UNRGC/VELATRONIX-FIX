@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import multer from 'multer';
 import { env } from '../env';
 
-// Tipos permitidos (§6.2). Se valida MIME + extensión.
+// Tipos aceptados para comprobantes. La firma real se valida antes de persistir.
 export const ALLOWED_MIME: Record<string, string> = {
   'application/pdf': '.pdf',
   'image/jpeg': '.jpg',
@@ -29,7 +29,7 @@ function hasAllowedSignature(file: Express.Multer.File): boolean {
   return false;
 }
 
-// Guardamos en memoria: así validamos folio+correo ANTES de persistir el archivo (§18).
+// Almacenamiento en memoria para validar folio y contacto antes de escribir a disco.
 export const uploadProof = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: env.maxUploadSizeMb * 1024 * 1024, files: 1 },

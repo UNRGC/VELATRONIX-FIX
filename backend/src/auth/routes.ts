@@ -25,7 +25,7 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    // Mismo mensaje para email inexistente o password incorrecta.
+    // Respuesta uniforme para no revelar si existe el correo.
     if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
       throw new HttpError(401, 'Credenciales inválidas');
     }
@@ -43,7 +43,7 @@ authRouter.get(
   })
 );
 
-// Logout es del lado del cliente (borra el token). Endpoint por compatibilidad.
+// Endpoint de compatibilidad; la sesión se invalida limpiando la cookie.
 authRouter.post('/logout', (_req, res) => {
   res.clearCookie(AUTH_COOKIE_NAME, authCookie);
   res.json({ ok: true });

@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={{ user, loading, login, logout }}>{children}</Ctx.Provider>;
 }
 
-// Permisos derivados del rol (espejo de la matriz del backend §17, solo para mostrar/ocultar UI).
+// Permisos derivados del rol. El backend sigue siendo la fuente de autorización.
 export const can = {
   createRepair: (r?: Role) => r === 'ADMIN' || r === 'EMPLOYEE',
   editRepairData: (r?: Role) => r === 'ADMIN' || r === 'EMPLOYEE',

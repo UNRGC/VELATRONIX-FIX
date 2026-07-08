@@ -8,7 +8,7 @@ import { AuthedRequest, requireAuth, requireRole } from '../auth/middleware';
 export const settingsRouter = Router();
 settingsRouter.use(requireAuth, requireRole(Role.ADMIN));
 
-// Siempre existe una sola fila (creada por el seed). La devolvemos o creamos vacía.
+// Configuración singleton: el seed la crea y el router garantiza fallback vacío.
 async function getSettings() {
   return (await prisma.paymentSettings.findFirst({ orderBy: { updatedAt: 'desc' } })) ?? prisma.paymentSettings.create({ data: {} });
 }
