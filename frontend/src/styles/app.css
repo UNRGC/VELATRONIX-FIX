@@ -384,6 +384,7 @@
   padding: 24px;
   max-width: 1160px;
   width: 100%;
+  margin: 0 auto;
 }
 .page-title {
   font-size: 22px;
@@ -413,6 +414,7 @@
 }
 .muted {
   color: var(--ink-faint);
+  margin: 0 0 18px 0;
 }
 .stat-grid {
   display: grid;
@@ -503,12 +505,6 @@
   border-color: var(--ink);
 }
 
-/* Vista pública */
-.public {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
 /* Header público claro con filo de marca verde → azul (firma del logo) */
 .public-top {
   color: var(--ink);
@@ -525,19 +521,7 @@
   max-width: 660px;
   margin: 0 auto;
   padding: 32px 20px 64px;
-}
-.lookup-hero {
-  text-align: center;
-  padding: 40px 0 28px;
-}
-.lookup-hero h1 {
-  font-size: 30px;
-  margin: 10px 0 8px;
-}
-.lookup-hero .terminal {
-  font-family: var(--font-mono);
-  color: var(--accent);
-  font-size: 13px;
+  min-height: 100vh;
 }
 .pub-msg {
   border-left: 3px solid var(--accent);

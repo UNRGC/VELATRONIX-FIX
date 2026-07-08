@@ -14,31 +14,29 @@ export function Consultar() {
   const [creds, setCreds] = useState<{ folio: string; contact: string } | null>(null);
 
   return (
-    <div className="public">
-      <div className="public-top">
-        <Brand sub="Consulta de servicio" />
-      </div>
       <div className="public-wrap">
-        {!result ? (
-          <LookupForm
-            onFound={(data, c) => {
-              setResult(data);
-              setCreds(c);
-            }}
-          />
-        ) : (
-          <Result
-            data={result}
-            creds={creds!}
-            onRefresh={(d) => setResult(d)}
-            onReset={() => {
-              setResult(null);
-              setCreds(null);
-            }}
-          />
-        )}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, color: 'var(--ink)' }}>
+              <Brand sub="Consulta de servicio" logoSize={44} />
+          </div>
+          {!result ? (
+              <LookupForm
+                  onFound={(data, c) => {
+                      setResult(data);
+                      setCreds(c);
+                  }}
+              />
+          ) : (
+              <Result
+                  data={result}
+                  creds={creds!}
+                  onRefresh={(d) => setResult(d)}
+                  onReset={() => {
+                      setResult(null);
+                      setCreds(null);
+                  }}
+              />
+          )}
       </div>
-    </div>
   );
 }
 
@@ -63,12 +61,9 @@ function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; 
 
   return (
     <div>
-      <div className="lookup-hero">
-        <div className="terminal">&gt; consulta_reparacion</div>
-        <h1>Consulta tu equipo</h1>
-        <p className="muted">Ingresa tu folio y el correo o teléfono con el que se registró la reparación.</p>
-      </div>
       <form className="card card-pad" onSubmit={handleSubmit(submit)}>
+          <h1 style={{ fontSize: 18 }}>Consulta tu equipo</h1>
+          <p className="muted">Ingresa tu folio y el correo o teléfono con el que se registró la reparación.</p>
         {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
         <div className="field">
           <label>Folio</label>

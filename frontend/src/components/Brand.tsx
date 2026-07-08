@@ -23,7 +23,7 @@ export function Logo({ height = 32 }: { height?: number }) {
     );
 }
 
-export function Brand({ sub, logoSize = 32 }: { sub?: string; logoSize?: number }) {
+export function Brand({ sub, logoSize = 48 }: { sub?: string; logoSize?: number }) {
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <Logo height={logoSize} />
