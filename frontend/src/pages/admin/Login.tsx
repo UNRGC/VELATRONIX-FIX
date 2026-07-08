@@ -32,7 +32,7 @@ export function Login() {
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, color: 'var(--ink)' }}>
-          <Brand sub="Panel de servicio" logoSize={34} wordSize={24} />
+          <Brand sub="Panel de servicio" logoSize={44} />
         </div>
         <form className="card card-pad" onSubmit={handleSubmit(onSubmit)}>
           <h1 className="page-title" style={{ fontSize: 18, marginBottom: 18 }}>

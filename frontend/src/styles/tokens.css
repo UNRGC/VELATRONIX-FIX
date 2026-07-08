@@ -15,10 +15,14 @@
   --ink-soft: #45555f;
   --ink-faint: #6b7a85;
 
-  /* Acento instrumento (teal) */
-  --accent: #12707a;
-  --accent-ink: #0b555d;
-  --accent-wash: #e3f0f1;
+  /* Acento de marca (verde Velatronix) */
+  --accent: #1c7a34;
+  --accent-ink: #145226;
+  --accent-wash: #e3f3e5;
+
+  /* Verde claro y azul de marca (icono/señal del logo) */
+  --brand-green-bright: #4caf3c;
+  --brand-blue: #1f2b6e;
 
   /* Espectro de estado (LEDs de señal) */
   --sig-wait: #c77b1a;     /* ámbar — en espera */
