@@ -12,6 +12,9 @@ import { emailClient } from '../email/notify';
 export const repairsRouter = Router();
 repairsRouter.use(requireAuth);
 
+// El front envía "" cuando el campo queda vacío; lo tratamos como ausente.
+const optionalEmail = z.preprocess((v) => (v === '' ? undefined : v), z.string().email().optional());
+
 const repairInclude = {
   customer: true,
   assignedTechnician: { select: { id: true, name: true } },
@@ -80,7 +83,7 @@ const createSchema = z.object({
   customer: z
     .object({
       name: z.string().min(1),
-      email: z.string().email().optional(),
+      email: optionalEmail,
       phone: z.string().optional(),
     })
     .refine((c) => c.email || c.phone, { message: 'Se requiere correo o teléfono', path: ['email'] }),
@@ -160,7 +163,7 @@ repairsRouter.get(
 
 // Edición operativa de datos de cliente y equipo.
 const editSchema = z.object({
-  customer: z.object({ name: z.string().min(1).optional(), email: z.string().email().optional(), phone: z.string().optional() }).optional(),
+  customer: z.object({ name: z.string().min(1).optional(), email: optionalEmail, phone: z.string().optional() }).optional(),
   deviceBrand: z.string().optional(),
   deviceModel: z.string().optional(),
   deviceSerialNumber: z.string().optional(),

@@ -414,7 +414,6 @@
 }
 .muted {
   color: var(--ink-faint);
-  margin: 0 0 18px 0;
 }
 .stat-grid {
   display: grid;

@@ -63,7 +63,9 @@ function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; 
     <div>
       <form className="card card-pad" onSubmit={handleSubmit(submit)}>
           <h1 style={{ fontSize: 18 }}>Consulta tu equipo</h1>
-          <p className="muted">Ingresa tu folio y el correo o teléfono con el que se registró la reparación.</p>
+          <p className="muted" style={{margin: 0, marginBottom: 18}}>
+            Ingresa tu folio y el correo o teléfono con el que se registró la reparación.
+          </p>
         {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
         <div className="field">
           <label>Folio</label>

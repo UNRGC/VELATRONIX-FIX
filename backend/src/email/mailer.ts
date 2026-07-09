@@ -9,7 +9,8 @@ const isLocalSmtp = ['mailpit', 'localhost', '127.0.0.1'].includes(env.smtp.host
 const transporter = nodemailer.createTransport({
   host: env.smtp.host,
   port: env.smtp.port,
-  secure: false,
+  // Puerto 465 = TLS implícito (secure); 587/25/1025 = texto plano con STARTTLS.
+  secure: env.smtp.port === 465,
   auth: env.smtp.user ? { user: env.smtp.user, pass: env.smtp.password } : undefined,
   ...(isLocalSmtp ? { tls: { rejectUnauthorized: false } } : {}),
 });

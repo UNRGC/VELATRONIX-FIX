@@ -46,7 +46,7 @@ export function NewRepair() {
     }
     try {
       const body = {
-        customer: { name: d.name, email: d.email, phone: d.phone || undefined },
+        customer: { name: d.name, email: d.email || undefined, phone: d.phone || undefined },
         deviceType: d.deviceType,
         deviceBrand: d.deviceBrand || undefined,
         deviceModel: d.deviceModel || undefined,
