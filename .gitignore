@@ -8,3 +8,4 @@ uploads/
 uploaded_files/
 .DS_Store
 coverage/
+.idea/claudeCodeTabState.xml
