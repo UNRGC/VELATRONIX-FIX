@@ -20,6 +20,10 @@ export function RepairPrint() {
   if (isLoading) return <p style={{ padding: 24 }}>Cargando…</p>;
   if (!repair) return <p style={{ padding: 24 }}>Reparación no encontrada.</p>;
 
+  // URL pública de consulta: VITE_PUBLIC_URL si el sitio del cliente vive en otro dominio;
+  // si no, el origen actual (correcto por despliegue: demo, producción, etc.).
+  const consultUrl = `${import.meta.env.VITE_PUBLIC_URL ?? window.location.origin}/consultar`;
+
   return (
     <div style={{ maxWidth: 640, margin: '0 auto', padding: 24 }}>
       <style>{`@media print { .no-print { display: none; } }`}</style>
@@ -99,7 +103,9 @@ export function RepairPrint() {
       </div>
 
       <p className="muted" style={{ fontSize: 12, marginTop: 20 }}>
-        Conserva este comprobante. Puedes dar seguimiento a tu reparación en /consultar con el folio y tu correo o teléfono.
+        Conserva este comprobante. Da seguimiento a tu reparación con el folio y tu correo o teléfono en:
+        <br />
+        <strong>{consultUrl}</strong>
       </p>
     </div>
   );

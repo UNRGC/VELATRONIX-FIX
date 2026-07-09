@@ -63,6 +63,9 @@ export const TRANSITIONS: Record<RepairStatus, Transition[]> = {
 // Transiciones reservadas para endpoints con efectos colaterales propios.
 export const DEDICATED_ONLY: RepairStatus[] = ['DIAGNOSTICADO', 'EN_ESPERA_PAGO', 'PAGO_EN_VALIDACION'];
 
+// Estados terminales donde ya no puede quedar un pago pendiente: equipo entregado o devuelto.
+const CLEARS_PENDING_PAYMENT: RepairStatus[] = ['DEVOLUCION_SIN_REPARACION', 'ENTREGADO_CERRADO'];
+
 export type Actor =
   | { type: 'INTERNAL_USER'; userId: string; role: Role }
   | { type: 'PUBLIC_CLIENT' }
@@ -129,6 +132,19 @@ export async function applyTransition(
       actorType: actor.type as ActorType,
     },
   });
+
+  // Al entregar o devolver el equipo, cancela cualquier solicitud de pago aún activa
+  // para que no quede como pendiente ni pueda aceptarse/rechazarse. Los pagos ya
+  // validados conservan su estado (no se tocan).
+  if (CLEARS_PENDING_PAYMENT.includes(to)) {
+    const { count } = await tx.paymentRequest.updateMany({
+      where: { repairId, status: { in: ['PENDING', 'PROOF_RECEIVED', 'REJECTED'] } },
+      data: { status: 'CANCELLED' },
+    });
+    if (count > 0) {
+      await tx.repair.update({ where: { id: repairId }, data: { paymentStatus: 'CANCELLED', requiresPayment: false } });
+    }
+  }
 
   return updated;
 }
