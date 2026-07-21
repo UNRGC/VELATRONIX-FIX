@@ -4,9 +4,9 @@ import { api } from '../../lib/api';
 import { fmtDate } from '../../lib/format';
 import { DEVICE_LABELS } from '../../lib/status';
 import { Brand } from '../../components/Brand';
+import { AdminRepair } from '../../lib/apiTypes';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type Repair = any;
+type Repair = AdminRepair;
 
 // Vista independiente para impresión del comprobante de recepción.
 export function RepairPrint() {

@@ -6,11 +6,10 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { fmtDate, fmtDay, fmtMoney } from '../../lib/format';
 import { DEVICE_LABELS, METHOD_LABELS, PAYMENT_STATUS_LABELS, RepairStatus } from '../../lib/status';
 import { Brand } from '../../components/Brand';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { PublicRepair } from '../../lib/apiTypes';
 
 export function Consultar() {
-  const [result, setResult] = useState<any | null>(null);
+  const [result, setResult] = useState<PublicRepair | null>(null);
   const [creds, setCreds] = useState<{ folio: string; contact: string } | null>(null);
 
   return (
@@ -40,7 +39,7 @@ export function Consultar() {
   );
 }
 
-function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; contact: string }) => void }) {
+function LookupForm({ onFound }: { onFound: (data: PublicRepair, creds: { folio: string; contact: string }) => void }) {
   const { register, handleSubmit } = useForm<{ folio: string; contact: string }>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,7 +48,7 @@ function LookupForm({ onFound }: { onFound: (data: any, creds: { folio: string; 
     setError('');
     setLoading(true);
     try {
-      const data = (await api.post('/public/repairs/lookup', d)).data;
+      const data = (await api.post('/public/repairs/lookup', d)).data as PublicRepair;
       onFound(data, d);
     } catch (e) {
       // Mensaje genérico: no revela si falló el folio o el dato de contacto.
@@ -89,9 +88,9 @@ function Result({
   onRefresh,
   onReset,
 }: {
-  data: any;
+  data: PublicRepair;
   creds: { folio: string; contact: string };
-  onRefresh: (d: any) => void;
+  onRefresh: (d: PublicRepair) => void;
   onReset: () => void;
 }) {
   const status: RepairStatus = data.status;
@@ -115,9 +114,9 @@ function Result({
       <div className="card card-pad">
         <div className="row between" style={{ marginBottom: 16 }}>
           <span className="eyebrow">Estado</span>
-          <StatusBadge status={status} />
+          <StatusBadge status={status} label={data.statusLabel} />
         </div>
-        <StatusRail status={status} />
+        <StatusRail status={status} visited={data.visitedStatuses ?? []} />
       </div>
 
       <div className="card">
@@ -165,7 +164,7 @@ function Result({
             <h3>Seguimiento</h3>
           </div>
           <div className="card-pad stack" style={{ gap: 10 }}>
-            {data.history.map((h: any, i: number) => (
+            {data.history.map((h, i) => (
               <div key={i} style={{ borderLeft: '2px solid var(--accent)', paddingLeft: 12 }}>
                 <div className="row between wrap">
                   <strong style={{ fontSize: 13 }}>{h.statusLabel ?? h.action}</strong>
@@ -183,8 +182,8 @@ function Result({
   );
 }
 
-function PaymentBlock({ data, creds, onRefresh }: { data: any; creds: { folio: string; contact: string }; onRefresh: (d: any) => void }) {
-  const p = data.payment;
+function PaymentBlock({ data, creds, onRefresh }: { data: PublicRepair; creds: { folio: string; contact: string }; onRefresh: (d: PublicRepair) => void }) {
+  const p = data.payment!; // solo se renderiza cuando data.payment existe
   const ins = p.instructions;
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
@@ -198,7 +197,7 @@ function PaymentBlock({ data, creds, onRefresh }: { data: any; creds: { folio: s
       const fd = new FormData();
       fd.append('folio', creds.folio);
       fd.append('contact', creds.contact);
-      fd.append('payment_request_id', p.paymentRequestId);
+      fd.append('payment_request_id', p.paymentRequestId ?? '');
       fd.append('file', file);
       const res = (await api.post('/public/repairs/payment-proof', fd)).data;
       onRefresh(res);

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api, apiError, downloadProof } from '../../lib/api';
 import { fmtDate, fmtMoney } from '../../lib/format';
+import { PendingProof } from '../../lib/apiTypes';
 
 export function PendingPayments() {
   const qc = useQueryClient();
@@ -10,11 +11,11 @@ export function PendingPayments() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['pending-proofs'],
-    queryFn: async () => (await api.get('/payment-proofs', { params: { status: 'PENDING' } })).data as any[],
+    queryFn: async () => (await api.get('/payment-proofs', { params: { status: 'PENDING' } })).data as PendingProof[],
   });
 
   const mut = useMutation({
-    mutationFn: ({ url, body }: { url: string; body?: any }) => api.patch(url, body),
+    mutationFn: ({ url, body }: { url: string; body?: object }) => api.patch(url, body),
     onSuccess: () => {
       setError('');
       qc.invalidateQueries({ queryKey: ['pending-proofs'] });

@@ -70,6 +70,8 @@ export function serializePublicRepair(repair: FullRepair) {
         }
       : null,
     canUploadProof: canUploadProof(repair),
+    // Estados realmente recorridos, para que el riel no pinte pasos que no ocurrieron.
+    visitedStatuses: [...new Set(repair.history.flatMap((h) => [h.fromStatus, h.toStatus]))].filter(Boolean),
     history: repair.history
       .filter((h) => h.publicNote || h.toStatus)
       .map((h) => ({

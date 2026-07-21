@@ -6,6 +6,7 @@ import { asyncHandler, HttpError } from '../http';
 import { AuthedRequest, requireAuth, requireRole } from '../auth/middleware';
 import { InternalActor, applyTransition, TransitionError } from '../repairs/stateMachine';
 import { createPaymentRequest, findActivePaymentRequest, paymentReturnStatus, rejectPayment, validatePayment } from './service';
+import { syncRepairPaymentStatus } from './paymentStatus';
 import { emailClient } from '../email/notify';
 
 export const paymentsRouter = Router();
@@ -128,7 +129,7 @@ paymentsRouter.patch(
     if (!pr) throw new HttpError(404, 'Solicitud de pago no encontrada');
     await prisma.$transaction(async (tx) => {
       await tx.paymentRequest.update({ where: { id: pr.id }, data: { status: 'CANCELLED' } });
-      await tx.repair.update({ where: { id: pr.repairId }, data: { paymentStatus: 'CANCELLED' } });
+      await syncRepairPaymentStatus(tx, pr.repairId);
       await tx.repairHistory.create({
         data: { repairId: pr.repairId, action: 'Solicitud de pago cancelada', actorUserId: req.user!.id, actorType: 'INTERNAL_USER' },
       });

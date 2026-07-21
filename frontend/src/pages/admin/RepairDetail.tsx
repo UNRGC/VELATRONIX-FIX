@@ -8,9 +8,10 @@ import { StatusRail } from '../../components/StatusRail';
 import { fmtDate, fmtMoney } from '../../lib/format';
 import { DEVICE_LABELS, METHOD_LABELS, PAYMENT_STATUS_LABELS, RepairStatus } from '../../lib/status';
 import { can, useAuth, Role } from '../../lib/auth';
+import { AdminRepair, RepairHistoryEntry } from '../../lib/apiTypes';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type Repair = any;
+type Repair = AdminRepair;
 
 const DIAGNOSABLE: RepairStatus[] = ['EN_ESPERA_REVISION', 'EN_DIAGNOSTICO', 'DIAGNOSTICADO', 'EN_ESPERA_PAGO'];
 
@@ -65,7 +66,10 @@ export function RepairDetail() {
       </div>
 
       <div className="card card-pad" style={{ marginBottom: 20 }}>
-        <StatusRail status={status} />
+        <StatusRail
+          status={status}
+          visited={repair.history.flatMap((h) => [h.fromStatus, h.toStatus]).filter((s): s is RepairStatus => !!s)}
+        />
       </div>
 
       {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
@@ -92,6 +96,9 @@ function ActionsBar({
   status: RepairStatus;
   onStatus: (s: string, note?: string) => void;
 }) {
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [motivo, setMotivo] = useState('');
+
   const actions: { label: string; cls?: string; run: () => void }[] = [];
 
   if (status === 'DIAGNOSTICADO' && can.markInProcess(role))
@@ -101,28 +108,47 @@ function ActionsBar({
   if (status === 'REPARACION_REALIZADA' && can.markReady(role))
     actions.push({ label: 'Marcar listo para entrega', run: () => onStatus('LISTO_PARA_ENTREGA') });
   if (['DIAGNOSTICADO', 'EN_ESPERA_PAGO', 'EN_PROCESO_REPARACION', 'EN_ESPERA_REVISION'].includes(status) && can.markReturn(role))
-    actions.push({
-      label: 'Devolución sin reparación',
-      cls: 'btn-danger',
-      run: () => {
-        const motivo = window.prompt('Motivo / acuerdo de la devolución (visible al cliente):');
-        if (motivo) onStatus('DEVOLUCION_SIN_REPARACION', motivo);
-      },
-    });
+    actions.push({ label: 'Devolución sin reparación', cls: 'btn-danger', run: () => setReturnOpen(true) });
   if ((status === 'LISTO_PARA_ENTREGA' || status === 'DEVOLUCION_SIN_REPARACION') && can.markDelivered(role))
     actions.push({ label: 'Marcar entregado y cerrar', run: () => onStatus('ENTREGADO_CERRADO') });
 
   if (actions.length === 0) return null;
   return (
-    <div className="card card-pad row wrap" style={{ marginBottom: 20, gap: 10 }}>
-      <span className="eyebrow" style={{ alignSelf: 'center' }}>
-        Acciones
-      </span>
-      {actions.map((a) => (
-        <button key={a.label} className={`btn ${a.cls ?? 'btn-primary'}`} onClick={a.run}>
-          {a.label}
-        </button>
-      ))}
+    <div className="card card-pad" style={{ marginBottom: 20 }}>
+      <div className="row wrap" style={{ gap: 10 }}>
+        <span className="eyebrow" style={{ alignSelf: 'center' }}>
+          Acciones
+        </span>
+        {actions.map((a) => (
+          <button key={a.label} className={`btn ${a.cls ?? 'btn-primary'}`} onClick={a.run}>
+            {a.label}
+          </button>
+        ))}
+      </div>
+      {returnOpen && (
+        <div style={{ marginTop: 14 }}>
+          <div className="field">
+            <label>Motivo / acuerdo de la devolución (visible al cliente) *</label>
+            <textarea className="textarea" value={motivo} onChange={(e) => setMotivo(e.target.value)} autoFocus />
+          </div>
+          <div className="row">
+            <button
+              className="btn btn-danger btn-sm"
+              disabled={!motivo.trim()}
+              onClick={() => {
+                onStatus('DEVOLUCION_SIN_REPARACION', motivo.trim());
+                setReturnOpen(false);
+                setMotivo('');
+              }}
+            >
+              Confirmar devolución
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setReturnOpen(false)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -424,7 +450,7 @@ function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Rol
   const [form, setForm] = useState({ amount: '', concept: '', TRANSFER: true, DEPOSIT: true, CASH: true });
   const requests = repair.paymentRequests ?? [];
 
-  const hasActive = requests.some((pr: any) => ACTIVE_PR.includes(pr.status));
+  const hasActive = requests.some((pr) => ACTIVE_PR.includes(pr.status));
   const canRequest = can.requestPayment(role) && !hasActive && CAN_REQUEST_FROM.includes(repair.status);
 
   async function act(url: string, body?: any) {
@@ -540,7 +566,7 @@ function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Rol
         )}
 
         {requests.length === 0 && <p className="muted">No hay solicitudes de pago.</p>}
-        {requests.map((pr: any) => (
+        {requests.map((pr) => (
           <div key={pr.id} className="card" style={{ boxShadow: 'none' }}>
             <div className="card-pad">
               <div className="row between wrap">
@@ -558,7 +584,7 @@ function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Rol
 
               {can.viewProofs(role) && (pr.proofs ?? []).length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  {pr.proofs.map((p: any) => (
+                  {pr.proofs.map((p) => (
                     <div key={p.id} className="row between" style={{ padding: '6px 0', borderTop: '1px solid var(--line)' }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => openProof(p.id)}>
                         📎 {p.originalFilename}
@@ -596,7 +622,7 @@ function PaymentSection({ repair, role, onChange }: { repair: Repair; role?: Rol
 }
 
 /* Historial completo */
-function HistorySection({ history }: { history: any[] }) {
+function HistorySection({ history }: { history: RepairHistoryEntry[] }) {
   return (
     <div className="card">
       <div className="card-head">

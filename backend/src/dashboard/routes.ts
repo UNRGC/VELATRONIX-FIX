@@ -17,7 +17,8 @@ dashboardRouter.get(
       showPaymentCounters ? prisma.repair.count({ where: { status: 'PAGO_EN_VALIDACION' } }) : Promise.resolve(0),
       showPaymentCounters ? prisma.paymentProof.count({ where: { status: 'PENDING' } }) : Promise.resolve(0),
       prisma.repair.count({ where: { ...technicianScope, status: 'EN_ESPERA_REVISION' } }),
-      prisma.repair.count({ where: { ...technicianScope, status: 'LISTO_PARA_ENTREGA' } }),
+      // Incluye devoluciones sin reparación: también esperan que el cliente pase por el equipo.
+      prisma.repair.count({ where: { ...technicianScope, status: { in: ['LISTO_PARA_ENTREGA', 'DEVOLUCION_SIN_REPARACION'] } } }),
       prisma.repair.findMany({
         where: technicianScope,
         orderBy: { createdAt: 'desc' },

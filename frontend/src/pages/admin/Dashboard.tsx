@@ -5,6 +5,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { fmtDate } from '../../lib/format';
 import { RepairStatus } from '../../lib/status';
 import { can, useAuth } from '../../lib/auth';
+import { DashboardCounts } from '../../lib/apiTypes';
 
 interface RecentRepair {
   id: string;
@@ -19,10 +20,10 @@ export function Dashboard() {
   const { user } = useAuth();
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
-    queryFn: async () => (await api.get('/dashboard')).data,
+    queryFn: async () => (await api.get('/dashboard')).data as { counts: DashboardCounts; recent: RecentRepair[] },
   });
 
-  if (isLoading) return <p className="muted">Cargando…</p>;
+  if (isLoading || !data) return <p className="muted">Cargando…</p>;
   const c = data.counts;
 
   return (
@@ -49,7 +50,7 @@ export function Dashboard() {
         </div>
         <div className="stat">
           <div className="n">{c.readyForPickup}</div>
-          <div className="l">Listos para entrega</div>
+          <div className="l">Por entregar o devolver</div>
         </div>
       </div>
 

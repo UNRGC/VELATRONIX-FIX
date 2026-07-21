@@ -1,4 +1,5 @@
 import { Prisma, RepairStatus, Role, ActorType } from '@prisma/client';
+import { syncRepairPaymentStatus } from '../payments/paymentStatus';
 
 // Quién puede disparar una transición: un rol interno, el cliente público, o el sistema.
 export type Allow = Role | 'PUBLIC' | 'SYSTEM';
@@ -105,7 +106,8 @@ export async function applyTransition(
   }
 
   const timestamps: Prisma.RepairUncheckedUpdateInput = {};
-  if (to === 'LISTO_PARA_ENTREGA') timestamps.readyAt = new Date();
+  // Una devolución también deja el equipo listo para que el cliente pase por él.
+  if (to === 'LISTO_PARA_ENTREGA' || to === 'DEVOLUCION_SIN_REPARACION') timestamps.readyAt = new Date();
   if (to === 'ENTREGADO_CERRADO') {
     timestamps.deliveredAt = new Date();
     timestamps.closedAt = new Date();
@@ -137,13 +139,11 @@ export async function applyTransition(
   // para que no quede como pendiente ni pueda aceptarse/rechazarse. Los pagos ya
   // validados conservan su estado (no se tocan).
   if (CLEARS_PENDING_PAYMENT.includes(to)) {
-    const { count } = await tx.paymentRequest.updateMany({
+    await tx.paymentRequest.updateMany({
       where: { repairId, status: { in: ['PENDING', 'PROOF_RECEIVED', 'REJECTED'] } },
       data: { status: 'CANCELLED' },
     });
-    if (count > 0) {
-      await tx.repair.update({ where: { id: repairId }, data: { paymentStatus: 'CANCELLED', requiresPayment: false } });
-    }
+    await syncRepairPaymentStatus(tx, repairId);
   }
 
   return updated;

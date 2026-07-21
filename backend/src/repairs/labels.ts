@@ -21,7 +21,7 @@ export const STATUS_CLIENT_MESSAGE: Record<RepairStatus, string> = {
   DIAGNOSTICADO: 'Tu equipo ya fue revisado. Consulta el diagnóstico.',
   EN_ESPERA_PAGO: 'Se requiere pago o anticipo para continuar con la reparación.',
   PAGO_EN_VALIDACION: 'Comprobante recibido. El pago está pendiente de confirmación.',
-  EN_PROCESO_REPARACION: 'Pago confirmado. Tu equipo está en proceso de reparación.',
+  EN_PROCESO_REPARACION: 'Tu equipo está en proceso de reparación.',
   REPARACION_REALIZADA: 'La reparación fue realizada. Consulta las notas del técnico.',
   LISTO_PARA_ENTREGA: 'Tu equipo está listo para entrega.',
   DEVOLUCION_SIN_REPARACION: 'El equipo está listo para devolución sin reparación.',

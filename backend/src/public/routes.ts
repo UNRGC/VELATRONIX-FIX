@@ -4,6 +4,7 @@ import { Role } from '@prisma/client';
 import { prisma } from '../prisma';
 import { asyncHandler, HttpError } from '../http';
 import { applyTransition } from '../repairs/stateMachine';
+import { syncRepairPaymentStatus } from '../payments/paymentStatus';
 import { serializePublicRepair, canUploadProof } from './serialize';
 import { persistProof, uploadProof } from '../proofs/upload';
 import { notifyRole } from '../notifications/service';
@@ -97,7 +98,7 @@ publicRouter.post(
         },
       });
       await tx.paymentRequest.update({ where: { id: pr.id }, data: { status: 'PROOF_RECEIVED' } });
-      await tx.repair.update({ where: { id: repair.id }, data: { paymentStatus: 'PROOF_RECEIVED' } });
+      await syncRepairPaymentStatus(tx, repair.id);
       await applyTransition(tx, repair.id, 'PAGO_EN_VALIDACION', { type: 'PUBLIC_CLIENT' }, {
         publicNote: 'Comprobante recibido. El pago está pendiente de confirmación.',
         actionOverride: 'Comprobante de pago recibido',

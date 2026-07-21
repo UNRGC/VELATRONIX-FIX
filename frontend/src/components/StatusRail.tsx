@@ -1,22 +1,27 @@
 import { RAIL_STEPS, STATUS, RepairStatus } from '../lib/status';
 
+// Orden canónico completo: la devolución vive entre "listo para entrega" y "entregado".
+const ORDER: RepairStatus[] = [...RAIL_STEPS.slice(0, -1), 'DEVOLUCION_SIN_REPARACION', 'ENTREGADO_CERRADO'];
+
 /**
  * Riel de estados (elemento firma): la secuencia de la reparación como indicadores
- * de señal, con el estado actual encendido. La devolución sin reparación es una
- * rama terminal alterna: se muestra en su propio paso rojo.
+ * de señal, con el estado actual encendido. Se construye a partir de los estados
+ * realmente visitados (`visited`, derivado del historial) más los pasos futuros del
+ * flujo normal, para no pintar como completados pasos que se saltaron (pago en
+ * efectivo o sin pago, devolución sin reparación, retrocesos por pagos adicionales).
  */
-export function StatusRail({ status }: { status: RepairStatus }) {
-  const isReturn = status === 'DEVOLUCION_SIN_REPARACION';
-  const steps: RepairStatus[] = isReturn
-    ? ['EN_ESPERA_REVISION', 'EN_DIAGNOSTICO', 'DIAGNOSTICADO', 'DEVOLUCION_SIN_REPARACION']
-    : RAIL_STEPS;
+export function StatusRail({ status, visited = [] }: { status: RepairStatus; visited?: RepairStatus[] }) {
+  const seen = new Set<RepairStatus>([...visited, status]);
+  const returned = seen.has('DEVOLUCION_SIN_REPARACION');
+  const currentMainIdx = RAIL_STEPS.indexOf(status);
 
-  const currentIdx = steps.indexOf(status);
+  // Pasos visitados siempre; futuros solo en el flujo normal (una devolución es rama terminal).
+  const steps = ORDER.filter((s) => seen.has(s) || (!returned && RAIL_STEPS.indexOf(s) > currentMainIdx));
 
   return (
-    <div className={`rail${isReturn ? ' terminated' : ''}`}>
-      {steps.map((step, i) => {
-        const state = i < currentIdx ? 'done' : i === currentIdx ? 'current' : 'upcoming';
+    <div className={`rail${status === 'DEVOLUCION_SIN_REPARACION' ? ' terminated' : ''}`}>
+      {steps.map((step) => {
+        const state = step === status ? 'current' : seen.has(step) ? 'done' : 'upcoming';
         return (
           <div key={step} className={`rail-step ${state}`}>
             <div className="rail-dot" />

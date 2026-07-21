@@ -1,5 +1,6 @@
 import { Prisma, RepairStatus } from '@prisma/client';
 import { applyTransition, Actor } from '../repairs/stateMachine';
+import { syncRepairPaymentStatus } from './paymentStatus';
 
 export const PAYMENT_METHODS = ['TRANSFER', 'DEPOSIT', 'CASH'] as const;
 
@@ -54,10 +55,7 @@ export async function createPaymentRequest(
       createdByUserId: actor.type === 'INTERNAL_USER' ? actor.userId : undefined,
     },
   });
-  await tx.repair.update({
-    where: { id: repairId },
-    data: { requiresPayment: true, paymentStatus: 'PENDING' },
-  });
+  await syncRepairPaymentStatus(tx, repairId);
   return pr;
 }
 
@@ -88,7 +86,7 @@ export async function validatePayment(tx: Prisma.TransactionClient, paymentReque
     where: { paymentRequestId: pr.id, status: 'PENDING' },
     data: { status: 'VALIDATED', validatedAt: new Date() },
   });
-  await tx.repair.update({ where: { id: pr.repairId }, data: { paymentStatus: 'VALIDATED' } });
+  await syncRepairPaymentStatus(tx, pr.repairId);
 
   const repair = await applyTransition(tx, pr.repairId, pr.returnStatus ?? 'EN_PROCESO_REPARACION', actor, {
     actionOverride: 'Pago validado',
@@ -121,7 +119,7 @@ export async function rejectPayment(
     data: { status: 'REJECTED', rejectedAt: new Date(), rejectionReason: reason },
   });
   // El estado de pago queda rechazado, pero la solicitud sigue activa para permitir reenvío.
-  await tx.repair.update({ where: { id: pr.repairId }, data: { paymentStatus: 'REJECTED' } });
+  await syncRepairPaymentStatus(tx, pr.repairId);
 
   const repair = await applyTransition(tx, pr.repairId, 'EN_ESPERA_PAGO', actor, {
     actionOverride: 'Comprobante rechazado',
